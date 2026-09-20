@@ -2,7 +2,6 @@ import {
   FaGithub,
   FaInstagram,
   FaLinkedin,
-  FaBriefcase,
   FaWhatsapp,
   FaTelegram,
   FaDiscord,
@@ -103,12 +102,6 @@ export const MENU = [
     href: '#/creator',
   },
   {
-    label: 'Portfolio',
-    icon: FaBriefcase,
-    href: 'https://rizqinrr.github.io/portofolio/',
-    external: true,
-  },
-  {
     label: 'Game Mengetik',
     icon: 'keyboard',
     href: '#/typing-game',
@@ -126,8 +119,7 @@ export const HOME_CATEGORIES = [
     icon: 'rocket_launch',
     desc: 'Profil, CV, dan karya yang siap dibagikan.',
     items: [
-      { label: 'Buat CV', href: '#/creator', icon: 'edit_document' },
-      { label: 'Portfolio', href: 'https://rizqinrr.github.io/portofolio/', icon: FaBriefcase, external: true },
+      { label: 'Buat CV', href: '#/creator', icon: 'edit_document', author: 'rizqinrr', github: 'https://github.com/rizqinrr' },
     ],
   },
   {
@@ -135,10 +127,10 @@ export const HOME_CATEGORIES = [
     icon: 'sports_esports',
     desc: 'Mainkan, coba, dan temukan interaksi baru.',
     items: [
-      { label: 'Game Mengetik', href: '#/typing-game', icon: 'keyboard' },
-      { label: 'Refresh Man: Urban Rush', href: '#/game-lawas', icon: 'directions_run' },
-      { label: 'Arcade Profile', href: '#/arcade', icon: 'sports_esports' },
-      { label: 'Terminal Profile', href: '#/terminal', icon: 'terminal' },
+      { label: 'Game Mengetik', href: '#/typing-game', icon: 'keyboard', author: 'rizqinrr', github: 'https://github.com/rizqinrr' },
+      { label: 'Refresh Man: Urban Rush', href: '#/game-lawas', icon: 'directions_run', author: 'Dermawanpurba', github: 'https://github.com/Dermawanpurba' },
+      { label: 'Arcade Profile', href: '#/arcade', icon: 'sports_esports', author: 'rizqinrr', github: 'https://github.com/rizqinrr' },
+      { label: 'Terminal Profile', href: '#/terminal', icon: 'terminal', author: 'rizqinrr', github: 'https://github.com/rizqinrr' },
     ],
   },
   {
@@ -146,9 +138,9 @@ export const HOME_CATEGORIES = [
     icon: 'hub',
     desc: 'Jelajahi ruang komunitas dan format profil lainnya.',
     items: [
-      { label: 'Komunitas', href: '#/komunitas', icon: 'forum' },
-      { label: 'Swiss Editorial', href: '#/swiss', icon: 'grid_view' },
-      { label: 'Airbnb Experience', href: '#/airbnb', icon: 'home' },
+      { label: 'Komunitas', href: '#/komunitas', icon: 'forum', author: 'rizqinrr', github: 'https://github.com/rizqinrr' },
+      { label: 'Swiss Editorial', href: '#/swiss', icon: 'grid_view', author: 'rizqinrr', github: 'https://github.com/rizqinrr' },
+      { label: 'Airbnb Experience', href: '#/airbnb', icon: 'home', author: 'rizqinrr', github: 'https://github.com/rizqinrr' },
     ],
   },
 ]

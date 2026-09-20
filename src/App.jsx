@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { THEME_KEY, ACCENT } from './config/theme.js'
-import { PROFILE } from './config/profile.js'
-import { SITE, SOCIALS, MENU, TEMPLATES, HOME_CATEGORIES } from './config/links.js'
+import { SITE, SOCIALS, TEMPLATES, HOME_CATEGORIES } from './config/links.js'
 import CvPage from './CvPage.jsx'
 import CreatorPage from './creator/CreatorPage.jsx'
 import CommunityPage from './CommunityPage.jsx'
@@ -22,14 +21,12 @@ function App() {
     () => localStorage.getItem(THEME_KEY) || 'light',
   )
   const [toast, setToast] = useState('')
-  const [viewer, setViewer] = useState(null)
   const [route, setRoute] = useState(() => window.location.hash)
   const [showTemplates, setShowTemplates] = useState(false)
 
   useEffect(() => {
     const onHashChange = () => {
       setRoute(window.location.hash)
-      setViewer(null)
       setShowTemplates(false)
       window.scrollTo(0, 0)
     }
@@ -44,18 +41,6 @@ function App() {
   }, [theme])
 
 
-  useEffect(() => {
-    if (!viewer) return
-    const onKey = (e) => {
-      if (e.key === 'Escape') setViewer(null)
-    }
-    document.body.style.overflow = 'hidden'
-    window.addEventListener('keydown', onKey)
-    return () => {
-      document.body.style.overflow = ''
-      window.removeEventListener('keydown', onKey)
-    }
-  }, [viewer])
 
   useEffect(() => {
     if (!showTemplates) return
@@ -99,8 +84,8 @@ function App() {
 
   const handleShare = async () => {
     const shareData = {
-      title: `${PROFILE.name} - ${SITE.shareTitle}`,
-      text: `${SITE.shareText} ${PROFILE.name}`,
+      title: `OpenRepo - ${SITE.shareTitle}`,
+      text: 'Jelajahi tools open-source yang langsung berjalan di browser.',
       url: window.location.href,
     }
     if (navigator.share) {
@@ -172,104 +157,98 @@ function App() {
 
   return (
     <div className="container home-page">
-      <header className="top-header">
-        <div className="template-switcher-wrap">
-          <button
-            className="icon-btn"
-            onClick={() => setShowTemplates((prev) => !prev)}
-            aria-label="Pilih Desain Profil"
-            title="Pilih Desain Profil"
-          >
-            <span className="material-symbols-outlined">dashboard_customize</span>
-            <span className="template-badge-dot" />
-          </button>
+      <header className="home-nav">
+        <a className="home-brand" href="#/" aria-label="OpenRepo beranda">
+          <span className="home-brand-mark">O</span>
+          <span>OpenRepo</span>
+        </a>
 
-          {showTemplates && (
-            <div className="template-dropdown">
-              <div className="template-dropdown-header">
-                <span>Pilih Desain Profil</span>
-                <span className="template-dropdown-count">{TEMPLATES.length} Tema</span>
-              </div>
-              {TEMPLATES.map((tpl) => (
-                <a
-                  key={tpl.href}
-                  href={tpl.href}
-                  className="template-item"
-                  onClick={() => setShowTemplates(false)}
-                >
-                  <div className="template-item-icon">
-                    <span className="material-symbols-outlined">{tpl.icon}</span>
-                  </div>
-                  <div className="template-item-info">
-                    <div className="template-item-label">{tpl.label}</div>
-                    <div className="template-item-desc">{tpl.desc}</div>
-                  </div>
-                  <div className="template-item-chevron">
+        <nav className="home-nav-links" aria-label="Navigasi utama">
+          <a href="#home-tools">Tools</a>
+          <a href="#contribute">Kontribusi</a>
+          <a href="https://github.com/rizqinrr/openrepo" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </nav>
+
+        <div className="home-nav-actions">
+          <div className="template-switcher-wrap">
+            <button
+              className="home-nav-button"
+              onClick={() => setShowTemplates((prev) => !prev)}
+              aria-expanded={showTemplates}
+              aria-label="Pilih eksperimen visual"
+            >
+              <span className="material-symbols-outlined">apps</span>
+              <span className="home-nav-button-label">Eksperimen</span>
+            </button>
+            {showTemplates && (
+              <div className="template-dropdown">
+                <div className="template-dropdown-header">
+                  <span>Eksperimen visual</span>
+                  <span className="template-dropdown-count">{TEMPLATES.length}</span>
+                </div>
+                {TEMPLATES.map((tpl) => (
+                  <a key={tpl.href} href={tpl.href} className="template-item" onClick={() => setShowTemplates(false)}>
+                    <div className="template-item-icon"><span className="material-symbols-outlined">{tpl.icon}</span></div>
+                    <div className="template-item-info">
+                      <div className="template-item-label">{tpl.label}</div>
+                      <div className="template-item-desc">{tpl.desc}</div>
+                    </div>
                     <span className="material-symbols-outlined">chevron_right</span>
-                  </div>
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="top-actions">
-          <button
-            className="icon-btn"
-            onClick={toggleTheme}
-            aria-label="Ganti Mode Warna"
-          >
-            <span className="material-symbols-outlined">
-              {theme === 'dark' ? 'light_mode' : 'dark_mode'}
-            </span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+          <button className="home-nav-icon" onClick={toggleTheme} aria-label="Ganti mode warna">
+            <span className="material-symbols-outlined">{theme === 'dark' ? 'light_mode' : 'dark_mode'}</span>
           </button>
-          <button
-            className="icon-btn"
-            onClick={handleShare}
-            aria-label="Bagikan Profil"
-          >
+          <button className="home-nav-icon" onClick={handleShare} aria-label="Bagikan OpenRepo">
             <span className="material-symbols-outlined">share</span>
           </button>
         </div>
       </header>
 
-
       <section className="hero">
-        <button className="cover" onClick={() => setViewer(PROFILE.cover)}>
-          <img src={PROFILE.cover} alt="" className="cover-img" />
-          <div className="cover-overlay" />
-        </button>
-        <button
-          className="avatar-ring"
-          onClick={() => setViewer(PROFILE.avatar)}
-        >
-          <img src={PROFILE.avatar} alt={PROFILE.name} className="avatar-img" />
-          <div className="verified-badge">
-            <span className="material-symbols-outlined">check</span>
-          </div>
-        </button>
         <div className="home-hero-content">
-          <span className="home-eyebrow">OPEN-SOURCE CREATIVE HUB</span>
-          <h1>Tools kecil untuk bikin, belajar, dan bereksperimen.</h1>
+          <span className="home-eyebrow">OPEN-SOURCE BROWSER TOOLS</span>
+          <h1>Satu tempat untuk mencoba, membuat, dan bermain.</h1>
           <p>
-            Kumpulan tools, game, template, dan eksperimen web yang bisa dipakai langsung dari browser.
+            OpenRepo mengumpulkan tools praktis dan eksperimen interaktif yang langsung berjalan di browser—tanpa instalasi dan tanpa akun.
           </p>
           <div className="home-hero-actions">
-            <a href="#home-tools" className="home-cta home-cta-primary">Jelajahi tools</a>
-            <a href="#/typing-game" className="home-cta home-cta-secondary">Mainkan game</a>
-          </div>
-          {SOCIALS.filter((social) => social.label === 'GitHub').map((github) => (
-            <a
-              key={github.label}
-              className="home-github"
-              href={github.href}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <github.icon />
-              <span>github.com/rizqinrr</span>
+            <a href="#home-tools" className="home-cta home-cta-primary">Mulai menjelajah</a>
+            <a href="https://github.com/rizqinrr/openrepo" className="home-cta home-cta-secondary" target="_blank" rel="noopener noreferrer">
+              <span>GitHub</span>
+              <span className="material-symbols-outlined">north_east</span>
             </a>
-          ))}
+          </div>
+          <ul className="home-hero-proof" aria-label="Keunggulan OpenRepo">
+            <li><span className="material-symbols-outlined">language</span> Browser-first</li>
+            <li><span className="material-symbols-outlined">lock_open</span> Open source</li>
+            <li><span className="material-symbols-outlined">person_off</span> Tanpa akun</li>
+          </ul>
+        </div>
+
+        <div className="home-hero-showcase" aria-label="Pilihan populer">
+          <div className="home-showcase-head">
+            <div><span></span><span></span><span></span></div>
+            <strong>openrepo / featured</strong>
+          </div>
+          <a href="#/game-lawas" className="home-showcase-item home-showcase-featured">
+            <span className="material-symbols-outlined">directions_run</span>
+            <div><strong>Refresh Man</strong><span>Endless arcade game</span></div>
+            <span className="material-symbols-outlined">arrow_forward</span>
+          </a>
+          <a href="#/typing-game" className="home-showcase-item">
+            <span className="material-symbols-outlined">keyboard</span>
+            <div><strong>Typing Survival</strong><span>Latih kecepatan mengetik</span></div>
+            <span className="material-symbols-outlined">arrow_forward</span>
+          </a>
+          <a href="#/creator" className="home-showcase-item">
+            <span className="material-symbols-outlined">edit_document</span>
+            <div><strong>CV Creator</strong><span>Buat CV langsung di browser</span></div>
+            <span className="material-symbols-outlined">arrow_forward</span>
+          </a>
         </div>
       </section>
 
@@ -292,12 +271,16 @@ function App() {
               <nav aria-label={category.title}>
                 {category.items.map((item) => (
                   <a
+                    className="home-category-item"
                     key={item.label}
                     href={item.href}
                     {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                   >
                     {typeof item.icon === 'string' ? <span className="material-symbols-outlined">{item.icon}</span> : <item.icon />}
-                    <span>{item.label}</span>
+                    <span className="home-category-item-copy">
+                      <span>{item.label}</span>
+                      {item.author && <small>oleh @{item.author}</small>}
+                    </span>
                     <span className="material-symbols-outlined">{item.external ? 'open_in_new' : 'arrow_forward'}</span>
                   </a>
                 ))}
@@ -307,33 +290,42 @@ function App() {
         </div>
       </section>
 
+      <section id="contribute" className="home-contribute" aria-labelledby="contribute-title">
+        <div className="home-contribute-copy">
+          <span className="home-eyebrow">BUILT IN THE OPEN</span>
+          <h2 id="contribute-title">Punya tool kecil yang berguna? Bawa ke OpenRepo.</h2>
+          <p>
+            Kontribusi tidak harus besar. Tambahkan tool browser, rapikan pengalaman pengguna,
+            laporkan bug, atau usulkan ide yang bisa dipakai banyak orang.
+          </p>
+          <div className="home-contribute-actions">
+            <a className="home-contribute-primary" href="https://github.com/rizqinrr/openrepo" target="_blank" rel="noopener noreferrer">
+              Lihat repository
+              <span className="material-symbols-outlined">open_in_new</span>
+            </a>
+            <a className="home-contribute-secondary" href="https://github.com/rizqinrr/openrepo/issues/new" target="_blank" rel="noopener noreferrer">
+              Usulkan ide
+              <span className="material-symbols-outlined">lightbulb</span>
+            </a>
+          </div>
+        </div>
+        <div className="home-contribute-paths" aria-label="Cara berkontribusi">
+          <div className="home-contribute-path">
+            <span className="material-symbols-outlined">extension</span>
+            <div><strong>Kirim tool</strong><span>Tool browser yang ringan dan bermanfaat.</span></div>
+          </div>
+          <div className="home-contribute-path">
+            <span className="material-symbols-outlined">bug_report</span>
+            <div><strong>Laporkan bug</strong><span>Bantu membuat pengalaman yang lebih stabil.</span></div>
+          </div>
+          <div className="home-contribute-path">
+            <span className="material-symbols-outlined">design_services</span>
+            <div><strong>Perbaiki desain</strong><span>Aksesibilitas, copy, dan interaksi juga kontribusi.</span></div>
+          </div>
+        </div>
+      </section>
 
-      <nav className="menu">
-        {MENU.filter((row) => row.label !== 'CV').map((row) => (
-          <a
-            key={row.label}
-            className="menu-row"
-            href={row.href}
-            {...(row.external
-              ? { target: '_blank', rel: 'noopener noreferrer' }
-              : {})}
-          >
-            <div className="menu-icon-box">
-              {typeof row.icon === 'string' ? (
-                <span className="material-symbols-outlined">{row.icon}</span>
-              ) : (
-                <row.icon />
-              )}
-            </div>
-            <span className="menu-label">{row.label}</span>
-            <div className="menu-chevron">
-              <span className="material-symbols-outlined">
-                {row.external ? 'open_in_new' : 'chevron_right'}
-              </span>
-            </div>
-          </a>
-        ))}
-      </nav>
+
 
       <div className="social-card">
         <div className="social-row">
@@ -352,9 +344,7 @@ function App() {
       </div>
 
       <footer className="footer">
-        <p className="footer-copy">
-          &copy; 2026 {PROFILE.name}. {SITE.footerRights}
-        </p>
+        <p className="footer-copy">&copy; 2026 OpenRepo. {SITE.footerRights}</p>
       </footer>
 
       <div className={`toast${toast ? ' show' : ''}`}>
@@ -362,23 +352,6 @@ function App() {
         {toast}
       </div>
 
-      {viewer && (
-        <div className="photo-viewer" onClick={() => setViewer(null)}>
-          <button
-            className="viewer-close"
-            onClick={() => setViewer(null)}
-            aria-label="Tutup"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
-          <img
-            src={viewer}
-            alt=""
-            className="viewer-img"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
     </div>
   )
 }

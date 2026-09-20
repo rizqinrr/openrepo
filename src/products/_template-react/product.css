@@ -1,0 +1,9 @@
+.example-product {
+  min-height: 100dvh;
+  padding: 2rem;
+}
+
+.example-product a:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}

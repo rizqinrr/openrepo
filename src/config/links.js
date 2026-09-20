@@ -109,9 +109,46 @@ export const MENU = [
     external: true,
   },
   {
+    label: 'Game Mengetik',
+    icon: 'keyboard',
+    href: '#/typing-game',
+  },
+  {
     label: 'Komunitas',
     icon: 'forum',
     href: '#/komunitas',
+  },
+]
+
+export const HOME_CATEGORIES = [
+  {
+    title: 'Mulai dari sini',
+    icon: 'rocket_launch',
+    desc: 'Profil, CV, dan karya yang siap dibagikan.',
+    items: [
+      { label: 'Buat CV', href: '#/creator', icon: 'edit_document' },
+      { label: 'Portfolio', href: 'https://rizqinrr.github.io/portofolio/', icon: FaBriefcase, external: true },
+    ],
+  },
+  {
+    title: 'Playground',
+    icon: 'sports_esports',
+    desc: 'Mainkan, coba, dan temukan interaksi baru.',
+    items: [
+      { label: 'Game Mengetik', href: '#/typing-game', icon: 'keyboard' },
+      { label: 'Arcade Profile', href: '#/arcade', icon: 'sports_esports' },
+      { label: 'Terminal Profile', href: '#/terminal', icon: 'terminal' },
+    ],
+  },
+  {
+    title: 'Komunitas & template',
+    icon: 'hub',
+    desc: 'Jelajahi ruang komunitas dan format profil lainnya.',
+    items: [
+      { label: 'Komunitas', href: '#/komunitas', icon: 'forum' },
+      { label: 'Swiss Editorial', href: '#/swiss', icon: 'grid_view' },
+      { label: 'Airbnb Experience', href: '#/airbnb', icon: 'home' },
+    ],
   },
 ]
 

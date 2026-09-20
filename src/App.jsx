@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { THEME_KEY, ACCENT } from './config/theme.js'
 import { PROFILE } from './config/profile.js'
-import { SITE, SOCIALS, COURSE, MENU, TEMPLATES } from './config/links.js'
+import { SITE, SOCIALS, MENU, TEMPLATES, HOME_CATEGORIES } from './config/links.js'
 import CvPage from './CvPage.jsx'
 import CreatorPage from './creator/CreatorPage.jsx'
 import CommunityPage from './CommunityPage.jsx'
 import PortfolioPage from './PortfolioPage.jsx'
+import TypingGamePage from './game/TypingGamePage.jsx'
 import NeoProfilePage from './templates/neo/NeoProfilePage.jsx'
 import CyberProfilePage from './templates/cyber/CyberProfilePage.jsx'
 import { LuxuryProfilePage } from './templates/luxury/LuxuryProfilePage.jsx'
@@ -135,6 +136,10 @@ function App() {
     return <CommunityPage />
   }
 
+  if (route === '#/typing-game') {
+    return <TypingGamePage />
+  }
+
   if (route === '#/neo') {
     return <NeoProfilePage />
   }
@@ -168,7 +173,7 @@ function App() {
   }
 
   return (
-    <div className="container">
+    <div className="container home-page">
       <header className="top-header">
         <div className="template-switcher-wrap">
           <button
@@ -254,26 +259,60 @@ function App() {
             <span className="material-symbols-outlined">check</span>
           </div>
         </button>
-        <h2 className="profile-name">{PROFILE.name}</h2>
-        <span className="profile-handle">{PROFILE.handle}</span>
-        <p className="profile-bio">{PROFILE.bio}</p>
+        <div className="home-hero-content">
+          <span className="home-eyebrow">OPEN-SOURCE CREATIVE HUB</span>
+          <h1>Tools kecil untuk bikin, belajar, dan bereksperimen.</h1>
+          <p>
+            Kumpulan tools, game, template, dan eksperimen web yang bisa dipakai langsung dari browser.
+          </p>
+          <div className="home-hero-actions">
+            <a href="#home-tools" className="home-cta home-cta-primary">Jelajahi tools</a>
+            <a href="#/typing-game" className="home-cta home-cta-secondary">Mainkan game</a>
+          </div>
+          <div className="home-maker">
+            <strong>{PROFILE.name}</strong>
+            <span>{PROFILE.handle} · {PROFILE.bio}</span>
+          </div>
+        </div>
       </section>
 
-      <a className="course-card" href={COURSE.href}>
-        <div className="course-icon-box">
-          <COURSE.icon />
+      <section id="home-tools" className="home-tools" aria-labelledby="home-tools-title">
+        <div className="home-tools-heading">
+          <div>
+            <span className="home-eyebrow">OPEN TOOLBOX</span>
+            <h2 id="home-tools-title">Jelajahi tools & ruang kreatif</h2>
+          </div>
+          <span className="home-tools-count">{HOME_CATEGORIES.length} kategori</span>
         </div>
-        <div className="course-text">
-          <div className="course-title">{COURSE.title}</div>
-          <div className="course-desc">{COURSE.desc}</div>
+        <div className="home-category-grid">
+          {HOME_CATEGORIES.map((category) => (
+            <article className="home-category" key={category.title}>
+              <div className="home-category-top">
+                <span className="material-symbols-outlined">{category.icon}</span>
+                <h3>{category.title}</h3>
+              </div>
+              <p>{category.desc}</p>
+              <nav aria-label={category.title}>
+                {category.items.map((item) => (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    {...(item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  >
+                    {typeof item.icon === 'string' ? <span className="material-symbols-outlined">{item.icon}</span> : <item.icon />}
+                    <span>{item.label}</span>
+                    <span className="material-symbols-outlined">{item.external ? 'open_in_new' : 'arrow_forward'}</span>
+                  </a>
+                ))}
+              </nav>
+            </article>
+          ))}
         </div>
-        <div className="course-arrow">
-          <span className="material-symbols-outlined">arrow_forward</span>
-        </div>
-      </a>
+      </section>
+
 
       <nav className="menu">
-        {MENU.map((row) => (
+        {MENU.filter((row) => row.label !== 'CV').map((row) => (
           <a
             key={row.label}
             className="menu-row"

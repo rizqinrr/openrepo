@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import './home-sourceforge.css'
+import './game/game-lawas.css'
 import './creator/creator.css'
 import App from './App.jsx'
 

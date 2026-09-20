@@ -136,6 +136,7 @@ export const HOME_CATEGORIES = [
     desc: 'Mainkan, coba, dan temukan interaksi baru.',
     items: [
       { label: 'Game Mengetik', href: '#/typing-game', icon: 'keyboard' },
+      { label: 'Refresh Man: Urban Rush', href: '#/game-lawas', icon: 'directions_run' },
       { label: 'Arcade Profile', href: '#/arcade', icon: 'sports_esports' },
       { label: 'Terminal Profile', href: '#/terminal', icon: 'terminal' },
     ],

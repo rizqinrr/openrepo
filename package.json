@@ -1,9 +1,9 @@
 {
-  "name": "cv",
+  "name": "openrepo",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://rizqinrr.github.io/cv",
+  "homepage": "https://rizqinrr.github.io/openrepo",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

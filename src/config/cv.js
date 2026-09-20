@@ -6,7 +6,7 @@ export const CV = {
     phone: "+62 81390012456",
     email: "studyrizqi@gmail.com",
     location: "Klaten, Jawa Tengah",
-    website: "https://rizqinrr.github.io/cv",
+    website: "https://rizqinrr.github.io/openrepo",
   },
   summary:
     "Mahasiswa D3 Teknik Informatika semester akhir dengan pengalaman langsung dalam pengelolaan administrasi, pencatatan data, dan penyusunan laporan. Terbiasa menggunakan Microsoft Office dan Google Workspace dalam kegiatan kerja sehari-hari. Memiliki kemampuan komunikasi yang baik, terbiasa berkoordinasi dengan berbagai pihak, serta cepat beradaptasi dengan sistem dan alur kerja baru.",

@@ -7,6 +7,7 @@ import CreatorPage from './creator/CreatorPage.jsx'
 import CommunityPage from './CommunityPage.jsx'
 import PortfolioPage from './PortfolioPage.jsx'
 import TypingGamePage from './game/TypingGamePage.jsx'
+import GameLawasPage from './game/GameLawasPage.jsx'
 import NeoProfilePage from './templates/neo/NeoProfilePage.jsx'
 import CyberProfilePage from './templates/cyber/CyberProfilePage.jsx'
 import { LuxuryProfilePage } from './templates/luxury/LuxuryProfilePage.jsx'
@@ -21,7 +22,6 @@ function App() {
     () => localStorage.getItem(THEME_KEY) || 'light',
   )
   const [toast, setToast] = useState('')
-  const [scrolled, setScrolled] = useState(false)
   const [viewer, setViewer] = useState(null)
   const [route, setRoute] = useState(() => window.location.hash)
   const [showTemplates, setShowTemplates] = useState(false)
@@ -43,12 +43,6 @@ function App() {
     localStorage.setItem(THEME_KEY, theme)
   }, [theme])
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 130)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
 
   useEffect(() => {
     if (!viewer) return
@@ -138,6 +132,10 @@ function App() {
 
   if (route === '#/typing-game') {
     return <TypingGamePage />
+  }
+
+  if (route === '#/game-lawas') {
+    return <GameLawasPage />
   }
 
   if (route === '#/neo') {
@@ -235,17 +233,8 @@ function App() {
         </div>
       </header>
 
-      <div className={`top-capsule${scrolled ? ' show' : ''}`}>
-        <div className="capsule-avatar">
-          <img src={PROFILE.avatar} alt={PROFILE.name} />
-        </div>
-        <div className="capsule-text">
-          <div className="capsule-name">{PROFILE.name}</div>
-          <div className="capsule-handle">{PROFILE.handle}</div>
-        </div>
-      </div>
 
-      <section className={`hero${scrolled ? ' collapsed' : ''}`}>
+      <section className="hero">
         <button className="cover" onClick={() => setViewer(PROFILE.cover)}>
           <img src={PROFILE.cover} alt="" className="cover-img" />
           <div className="cover-overlay" />
@@ -269,10 +258,18 @@ function App() {
             <a href="#home-tools" className="home-cta home-cta-primary">Jelajahi tools</a>
             <a href="#/typing-game" className="home-cta home-cta-secondary">Mainkan game</a>
           </div>
-          <div className="home-maker">
-            <strong>{PROFILE.name}</strong>
-            <span>{PROFILE.handle} · {PROFILE.bio}</span>
-          </div>
+          {SOCIALS.filter((social) => social.label === 'GitHub').map((github) => (
+            <a
+              key={github.label}
+              className="home-github"
+              href={github.href}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <github.icon />
+              <span>github.com/rizqinrr</span>
+            </a>
+          ))}
         </div>
       </section>
 

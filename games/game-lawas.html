@@ -1,0 +1,2214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Refresh Man: Urban Rush - Endless Arcade</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Chakra+Petch:ital,wght@0,600;0,800;1,700;1,900&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      box-sizing: border-box;
+      touch-action: manipulation;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b0d14;
+      font-family: 'Chakra Petch', 'Inter', sans-serif;
+    }
+    #canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+    .retro-skew {
+      transform: skew(-10deg);
+    }
+    .arcade-font {
+      font-family: 'Black Ops One', cursive, sans-serif;
+      letter-spacing: 1px;
+    }
+    .neon-text-yellow {
+      color: #ffee00;
+      text-shadow: 0 0 8px rgba(255, 238, 0, 0.8), 0 0 16px rgba(255, 170, 0, 0.6);
+    }
+    .neon-text-cyan {
+      color: #00f5d4;
+      text-shadow: 0 0 8px rgba(0, 245, 212, 0.8), 0 0 16px rgba(0, 180, 216, 0.5);
+    }
+    .neon-text-pink {
+      color: #ff007f;
+      text-shadow: 0 0 8px rgba(255, 0, 127, 0.8), 0 0 16px rgba(255, 0, 127, 0.5);
+    }
+    .arcade-btn {
+      background: linear-gradient(135deg, #ff0055 0%, #ff5400 100%);
+      transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 6px 0 #990033, 0 10px 20px rgba(255, 0, 85, 0.4);
+    }
+    .arcade-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 #990033, 0 14px 24px rgba(255, 0, 85, 0.6);
+    }
+    .arcade-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #990033, 0 4px 10px rgba(255, 0, 85, 0.3);
+    }
+    #dash-streaks {
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.2s ease-out;
+      background: radial-gradient(circle, transparent 40%, rgba(0, 245, 212, 0.25) 75%, rgba(255, 255, 255, 0.7) 100%);
+      mix-blend-mode: screen;
+      z-index: 10;
+    }
+    .dash-active #dash-streaks {
+      opacity: 1;
+    }
+    .scanlines {
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 4px, 6px 100%;
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      z-index: 25;
+      opacity: 0.55;
+    }
+    #damage-flash {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle, transparent 40%, rgba(255, 0, 60, 0.65) 100%);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.1s ease-out;
+      z-index: 15;
+    }
+    .char-card {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .char-card.active {
+      border-color: #ffee00;
+      background: rgba(255, 238, 0, 0.15);
+      transform: scale(1.04);
+      box-shadow: 0 0 20px rgba(255, 238, 0, 0.4);
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden bg-slate-950 select-none">
+
+  <div id="canvas-container"></div>
+  <div id="dash-streaks"></div>
+  <div id="damage-flash"></div>
+  <div class="scanlines"></div>
+
+  <!-- In-Game Arcade HUD Overlay -->
+  <div id="hud-overlay" class="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-3 md:p-6 transition-opacity duration-300">
+    
+    <!-- Top HUD Row -->
+    <div class="flex items-start justify-between w-full">
+      <!-- Left: Lives, Hero Badge & Score -->
+      <div class="flex flex-col gap-1.5 bg-black/70 backdrop-blur-md p-3 rounded-2xl border-2 border-red-500/60 shadow-xl pointer-events-auto">
+        <div class="flex items-center gap-2">
+          <div id="hud-hero-badge" class="px-2 py-0.5 rounded-md bg-red-600 text-[10px] font-black text-white uppercase tracking-wider">
+            REFRESH MAN
+          </div>
+          <div id="life-icons-container" class="flex items-center gap-1.5">
+            <div id="life-1" class="w-6 h-9 rounded-md bg-gradient-to-b from-gray-100 to-red-600 border border-white shadow-md flex items-center justify-center text-[10px] font-black text-white">⚡</div>
+            <div id="life-2" class="w-6 h-9 rounded-md bg-gradient-to-b from-gray-100 to-red-600 border border-white shadow-md flex items-center justify-center text-[10px] font-black text-white">⚡</div>
+            <div id="life-3" class="w-6 h-9 rounded-md bg-gradient-to-b from-gray-100 to-red-600 border border-white shadow-md flex items-center justify-center text-[10px] font-black text-white">⚡</div>
+          </div>
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-baseline gap-2">
+            <span class="text-[10px] text-yellow-400 font-extrabold uppercase tracking-wider">SCORE</span>
+            <span id="hud-score" class="text-2xl md:text-3xl font-black neon-text-yellow arcade-font">00000</span>
+          </div>
+          <div class="text-[10px] font-bold text-slate-400">
+            HI-SCORE: <span id="hud-high-score-val" class="text-white font-mono">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Thirst Countdown & Endless Distance Meter -->
+      <div class="flex flex-col items-center">
+        <div class="bg-black/85 px-5 py-2 rounded-xl border-4 border-yellow-400 retro-skew shadow-2xl flex flex-col items-center">
+          <span class="text-[10px] md:text-xs font-black uppercase text-yellow-300 tracking-widest -skew-x-6">THIRST ENERGY</span>
+          <span id="hud-timer" class="text-3xl md:text-5xl font-black neon-text-yellow arcade-font -skew-x-6 tracking-wider">35.0</span>
+        </div>
+        <div class="mt-1 bg-black/80 px-4 py-1 rounded-full border-2 border-cyan-400/70 shadow-lg flex items-center gap-2">
+          <span class="text-[11px] font-black text-cyan-300 uppercase tracking-wider">JARAK:</span>
+          <span id="hud-distance" class="text-base font-black neon-text-cyan arcade-font">0</span>
+          <span class="text-[10px] font-bold text-slate-300">METER</span>
+        </div>
+      </div>
+
+      <!-- Right: Soda Cans & Turbo Dash Meter -->
+      <div class="flex flex-col gap-2 items-end bg-black/70 backdrop-blur-md p-3 rounded-2xl border-2 border-cyan-500/60 shadow-xl pointer-events-auto">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🥫</span>
+          <span id="hud-cans" class="text-2xl md:text-3xl font-black neon-text-cyan arcade-font">x00</span>
+        </div>
+        <div class="w-28 md:w-36 flex flex-col gap-1">
+          <div class="flex justify-between items-center text-[10px] font-bold tracking-wider text-cyan-300">
+            <span>DASH TURBO</span>
+            <span id="dash-pct-text">0%</span>
+          </div>
+          <div class="w-full h-3.5 bg-gray-900 rounded-full overflow-hidden border border-cyan-400 p-0.5">
+            <div id="hud-dash-fill" class="h-full bg-gradient-to-r from-cyan-400 via-yellow-300 to-red-500 rounded-full transition-all duration-75" style="width: 0%"></div>
+          </div>
+          <span id="dash-ready-hint" class="text-[9px] text-center font-bold text-yellow-300 opacity-0 uppercase animate-pulse">PRESS [SHIFT] READY!</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Screen Announcement Banner -->
+    <div id="banner-container" class="self-center flex flex-col items-center justify-center opacity-0 pointer-events-none transform scale-75 transition-all duration-200">
+      <h1 id="banner-text" class="text-5xl md:text-7xl font-black arcade-font text-white drop-shadow-[0_8px_16px_rgba(0,0,0,0.95)] tracking-wider text-center">GO!</h1>
+      <p id="banner-sub" class="text-lg md:text-xl font-bold uppercase text-yellow-300 mt-1 text-center"></p>
+    </div>
+
+    <!-- Bottom HUD Row -->
+    <div class="flex items-end justify-between w-full">
+      <!-- Controls Legend (Desktop) -->
+      <div class="hidden md:flex items-center gap-2 bg-black/70 backdrop-blur px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 border border-slate-700 pointer-events-auto">
+        <span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 text-yellow-300 font-bold">A / ◀</span>
+        <span class="text-cyan-300 font-bold">KIRI</span>
+        <span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 text-yellow-300 font-bold">D / ▶</span>
+        <span class="text-cyan-300 font-bold">KANAN</span>
+        <span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 text-yellow-300 font-bold">W / SPACE</span>
+        <span>LOMPAT</span>
+        <span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 text-yellow-300 font-bold">S / ▼</span>
+        <span>SLIDE</span>
+        <span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 text-red-300 font-bold">SHIFT</span>
+        <span>DASH</span>
+      </div>
+
+      <!-- Center Sound / Music Toggle Button -->
+      <div class="pointer-events-auto flex items-center gap-2">
+        <button id="btn-audio-toggle" class="bg-black/80 hover:bg-black text-xs font-bold text-cyan-300 border border-cyan-400 px-3 py-1.5 rounded-full shadow transition flex items-center gap-1.5">
+          <span id="audio-icon">🔊</span>
+          <span id="audio-label">AUDIO AKTIF</span>
+        </button>
+      </div>
+
+      <!-- Right: Speedometer & Speed Tier -->
+      <div class="flex flex-col items-end bg-black/70 backdrop-blur p-2.5 rounded-2xl border-2 border-yellow-400/70 shadow-xl pointer-events-auto">
+        <div class="text-[9px] uppercase font-bold text-yellow-300 tracking-wider">
+          SPEED TIER <span id="hud-tier" class="text-white font-black text-xs">1</span>
+        </div>
+        <div class="flex items-baseline gap-1">
+          <span id="hud-speedometer" class="text-2xl md:text-3xl font-black text-white arcade-font">47</span>
+          <span class="text-[10px] font-black text-yellow-400">KM/H</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Touch On-Screen Controls -->
+  <div id="mobile-controls" class="absolute bottom-4 left-0 right-0 z-30 flex justify-between px-4 pointer-events-none md:hidden">
+    <div class="flex gap-2 pointer-events-auto">
+      <button id="touch-left" class="w-14 h-14 rounded-2xl bg-cyan-600/50 active:bg-cyan-500/80 backdrop-blur border-2 border-cyan-300 text-white font-black text-2xl flex flex-col items-center justify-center shadow-lg active:scale-95 transition">
+        <span>◀</span>
+        <span class="text-[8px] font-black uppercase tracking-wider">KIRI</span>
+      </button>
+      <button id="touch-right" class="w-14 h-14 rounded-2xl bg-cyan-600/50 active:bg-cyan-500/80 backdrop-blur border-2 border-cyan-300 text-white font-black text-2xl flex flex-col items-center justify-center shadow-lg active:scale-95 transition">
+        <span>▶</span>
+        <span class="text-[8px] font-black uppercase tracking-wider">KANAN</span>
+      </button>
+    </div>
+    <div class="flex gap-2 pointer-events-auto">
+      <button id="touch-slide" class="w-14 h-14 rounded-2xl bg-yellow-500/50 active:bg-yellow-500/80 backdrop-blur border-2 border-yellow-300 text-yellow-100 font-black text-sm flex flex-col items-center justify-center shadow-lg active:scale-95 transition">
+        <span>▼</span>
+        <span class="text-[8px] font-black uppercase">SLIDE</span>
+      </button>
+      <button id="touch-jump" class="w-14 h-14 rounded-2xl bg-green-500/50 active:bg-green-500/80 backdrop-blur border-2 border-green-300 text-green-100 font-black text-sm flex flex-col items-center justify-center shadow-lg active:scale-95 transition">
+        <span>▲</span>
+        <span class="text-[8px] font-black uppercase">LOMPAT</span>
+      </button>
+      <button id="touch-dash" class="w-14 h-14 rounded-2xl bg-red-500/50 active:bg-red-500/80 backdrop-blur border-2 border-red-400 text-white font-black text-[9px] flex flex-col items-center justify-center shadow-lg active:scale-95 transition">
+        <span>⚡</span>
+        <span class="text-[8px] font-black uppercase">DASH</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Start Screen & 3D Character Selector -->
+  <div id="start-screen" class="absolute inset-0 z-40 bg-gradient-to-br from-indigo-950 via-slate-900 to-black/95 flex flex-col items-center justify-center p-4 md:p-6 overflow-y-auto">
+    <div class="max-w-2xl w-full bg-black/80 backdrop-blur-xl p-6 md:p-8 rounded-3xl border-4 border-yellow-400 shadow-2xl relative overflow-hidden flex flex-col items-center my-auto">
+      <div class="absolute -top-12 -right-12 w-40 h-40 bg-red-600/30 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-12 -left-12 w-40 h-40 bg-cyan-400/30 rounded-full blur-3xl pointer-events-none"></div>
+      
+      <span class="px-4 py-1 rounded-full bg-red-600 text-white font-black text-xs uppercase tracking-widest shadow-md">
+        Mode Tanpa Batas • Pecahkan Rekor!
+      </span>
+      
+      <h1 class="text-4xl md:text-6xl font-black arcade-font text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-red-500 to-cyan-300 mt-2 mb-1 retro-skew tracking-wider text-center">
+        REFRESH MAN
+      </h1>
+      <h2 class="text-sm md:text-xl font-black text-cyan-300 uppercase tracking-widest mb-4">
+        URBAN RUSH : INFINITE SPRINT
+      </h2>
+
+      <!-- Character Selector Heading -->
+      <div class="w-full flex items-center justify-between mb-2">
+        <span class="text-xs md:text-sm font-black text-yellow-400 uppercase tracking-wider">PILIH KARAKTER HERO 3D:</span>
+        <span id="selected-char-name" class="text-xs font-bold text-white bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-700">Refresh Man</span>
+      </div>
+
+      <!-- 3 Character Cards Grid -->
+      <div class="grid grid-cols-3 gap-2.5 w-full mb-5">
+        <!-- Character 1: Refresh Man (Classic) -->
+        <div id="card-char-1" class="char-card active p-3 rounded-2xl bg-slate-900/90 border-2 border-slate-700 flex flex-col items-center text-center">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-b from-gray-200 to-red-600 border border-white shadow flex items-center justify-center text-2xl mb-1.5">
+            ⚡
+          </div>
+          <span class="text-xs font-black text-white">REFRESH MAN</span>
+          <span class="text-[9px] font-bold text-red-400">Classic Soda</span>
+          <div class="w-full mt-2 pt-1.5 border-t border-slate-800 text-[8px] text-slate-300 flex flex-col gap-0.5 text-left">
+            <span>• Seimbang (All-Rounder)</span>
+            <span>• Top Speed stabil</span>
+          </div>
+        </div>
+
+        <!-- Character 2: Volt Fizz (Neon Cyber) -->
+        <div id="card-char-2" class="char-card p-3 rounded-2xl bg-slate-900/90 border-2 border-slate-700 flex flex-col items-center text-center">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-b from-yellow-300 to-cyan-500 border border-white shadow flex items-center justify-center text-2xl mb-1.5">
+            🌩️
+          </div>
+          <span class="text-xs font-black text-white">VOLT FIZZ</span>
+          <span class="text-[9px] font-bold text-yellow-400">Electric Citrus</span>
+          <div class="w-full mt-2 pt-1.5 border-t border-slate-800 text-[8px] text-slate-300 flex flex-col gap-0.5 text-left">
+            <span>• Turbo Dash +20% Lebih Cepat</span>
+            <span>• Isi Dash Cepat (+15%/can)</span>
+          </div>
+        </div>
+
+        <!-- Character 3: Berry Rush (Magenta Violet) -->
+        <div id="card-char-3" class="char-card p-3 rounded-2xl bg-slate-900/90 border-2 border-slate-700 flex flex-col items-center text-center">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-b from-fuchsia-500 to-indigo-700 border border-white shadow flex items-center justify-center text-2xl mb-1.5">
+            🍇
+          </div>
+          <span class="text-xs font-black text-white">BERRY RUSH</span>
+          <span class="text-[9px] font-bold text-pink-400">Wild Berry</span>
+          <div class="w-full mt-2 pt-1.5 border-t border-slate-800 text-[8px] text-slate-300 flex flex-col gap-0.5 text-left">
+            <span>• Magnet Kaleng Ekstra Luas</span>
+            <span>• Manuver Belok Sangat Lincah</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls Guidance -->
+      <p class="text-slate-300 text-xs md:text-sm mb-4 leading-relaxed text-center">
+        Lari tanpa henti di jalanan kota! Hindari barikade, mobil sedan, spanduk, dan tukang kaca. Tekan <span class="text-cyan-300 font-bold">KIRI (A)</span> atau <span class="text-cyan-300 font-bold">KANAN (D)</span> untuk berganti lajur. Semakin lama bertahan, kecepatan lari akan terus meningkat!
+      </p>
+
+      <!-- Record High Score -->
+      <div class="flex items-center justify-around w-full bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 mb-5 text-xs">
+        <div class="flex flex-col items-center">
+          <span class="text-[10px] text-slate-400 font-bold uppercase">REKOR JARAK TERTINGGI</span>
+          <span id="start-high-dist" class="font-mono text-yellow-300 text-base font-black">0 M</span>
+        </div>
+        <div class="w-px h-8 bg-slate-700"></div>
+        <div class="flex flex-col items-center">
+          <span class="text-[10px] text-slate-400 font-bold uppercase">REKOR SKOR TERTINGGI</span>
+          <span id="start-high-score" class="font-mono text-cyan-300 text-base font-black">0 PTS</span>
+        </div>
+      </div>
+
+      <!-- Start Button -->
+      <button id="btn-start" class="arcade-btn w-full py-3.5 md:py-4 rounded-2xl text-white font-black text-xl md:text-2xl tracking-wider uppercase flex items-center justify-center gap-3">
+        <span>GAS RUN SEKARANG!</span>
+        <span>▶</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="gameover-screen" class="absolute inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center hidden">
+    <div class="max-w-md w-full bg-slate-900/95 p-6 md:p-8 rounded-3xl border-4 border-red-500 shadow-2xl flex flex-col items-center relative">
+      <span id="end-badge" class="px-4 py-1 rounded-full bg-red-600 text-white text-xs font-black uppercase tracking-widest mb-2">DEHIDRASI TOTAL!</span>
+      <h2 id="end-title" class="text-4xl md:text-5xl font-black arcade-font text-red-500 mb-2 retro-skew">GAME OVER</h2>
+      <p id="end-desc" class="text-slate-300 text-xs md:text-sm mb-5">Tenaga Refresh Man habis! Berapa jauh kamu bisa berlari?</p>
+
+      <!-- Stat breakdown -->
+      <div class="w-full bg-black/70 rounded-2xl p-4 border border-slate-800 mb-5 flex flex-col gap-2.5 text-xs md:text-sm font-semibold">
+        <div class="flex justify-between text-slate-300">
+          <span>Jarak Tempuh</span>
+          <span id="end-dist-val" class="text-cyan-300 font-mono font-bold">0 m</span>
+        </div>
+        <div class="flex justify-between text-slate-300">
+          <span>Kaleng Segar (<span id="end-cans-count">0</span> x 150)</span>
+          <span id="end-cans-score" class="text-yellow-300 font-mono">+0</span>
+        </div>
+        <div class="flex justify-between text-slate-300">
+          <span>Top Speed Dicapai</span>
+          <span id="end-speed-val" class="text-green-400 font-mono font-bold">0 KM/H</span>
+        </div>
+        <div class="h-px bg-slate-700 my-1"></div>
+        <div class="flex justify-between items-baseline text-sm md:text-base font-black">
+          <span class="text-yellow-400 uppercase">TOTAL SKOR</span>
+          <span id="end-final-score" class="text-2xl text-yellow-300 font-mono arcade-font">0</span>
+        </div>
+        <div id="new-high-badge" class="text-xs text-yellow-400 font-black animate-bounce mt-1 hidden">
+          ★ REKOR BARU DICIPTAKAN! ★
+        </div>
+      </div>
+
+      <button id="btn-restart" class="arcade-btn w-full py-3.5 rounded-2xl text-white font-black text-xl tracking-wider uppercase">
+        MAIN LAGI [R]
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* Procedural Web Audio API Engine for arcade retro sound effects & infinite funk synth loop */
+    class RetroSoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.masterGain = null;
+        this.isMuted = false;
+        this.bgmPlaying = false;
+        this.bgmTimer = null;
+        this.stepIndex = 0;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+          this.masterGain = this.ctx.createGain();
+          this.masterGain.gain.setValueAtTime(0.7, this.ctx.currentTime);
+          this.masterGain.connect(this.ctx.destination);
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      toggleMute() {
+        this.isMuted = !this.isMuted;
+        if (this.masterGain && this.ctx) {
+          this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.7, this.ctx.currentTime);
+        }
+        return this.isMuted;
+      }
+
+      playLaneShift() {
+        if (!this.ctx || this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(620, now + 0.08);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.09);
+      }
+
+      playCanPickup() {
+        if (!this.ctx || this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(980, now);
+        osc.frequency.exponentialRampToValueAtTime(1960, now + 0.12);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.13);
+      }
+
+      playJump() {
+        if (!this.ctx || this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(240, now);
+        osc.frequency.exponentialRampToValueAtTime(720, now + 0.18);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.19);
+      }
+
+      playSlide() {
+        if (!this.ctx || this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const bufferSize = this.ctx.sampleRate * 0.35;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1300, now);
+        filter.frequency.exponentialRampToValueAtTime(350, now + 0.35);
+        filter.Q.setValueAtTime(3.0, now);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+        noise.start(now);
+        noise.stop(now + 0.36);
+      }
+
+      playCrash() {
+        if (!this.ctx || this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const sub = this.ctx.createOscillator();
+        const subGain = this.ctx.createGain();
+        sub.type = 'sine';
+        sub.frequency.setValueAtTime(180, now);
+        sub.frequency.exponentialRampToValueAtTime(35, now + 0.4);
+        subGain.gain.setValueAtTime(0.6, now);
+        subGain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+        sub.connect(subGain);
+        subGain.connect(this.masterGain);
+        sub.start(now);
+        sub.stop(now + 0.45);
+
+        const osc = this.ctx.createOscillator();
+        const oscGain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(480, now);
+        osc.frequency.exponentialRampToValueAtTime(90, now + 0.3);
+        oscGain.gain.setValueAtTime(0.3, now);
+        oscGain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+        osc.connect(oscGain);
+        oscGain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      }
+
+      playDash() {
+        if (!this.ctx || this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.exponentialRampToValueAtTime(1400, now + 0.28);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.28);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.29);
+      }
+
+      playBeep(isHigh = false) {
+        if (!this.ctx || this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(isHigh ? 920 : 460, now);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      }
+
+      playRecordChime() {
+        if (!this.ctx || this.isMuted) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50, 1318.5];
+        notes.forEach((freq, idx) => {
+          const now = this.ctx.currentTime + idx * 0.1;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+          osc.connect(gain);
+          gain.connect(this.masterGain);
+          osc.start(now);
+          osc.stop(now + 0.36);
+        });
+      }
+
+      startBGM() {
+        if (this.bgmPlaying || !this.ctx) return;
+        this.bgmPlaying = true;
+        this.stepIndex = 0;
+        const stepTimeMs = (60 / 155 / 4) * 1000;
+
+        const bassLine = [
+          130.81, 0, 130.81, 155.56,
+          0, 174.61, 196.00, 0,
+          130.81, 130.81, 233.08, 0,
+          261.63, 196.00, 174.61, 155.56
+        ];
+
+        this.bgmTimer = setInterval(() => {
+          if (this.isMuted || !this.ctx || this.ctx.state !== 'running') return;
+          const now = this.ctx.currentTime;
+          const currentStep = this.stepIndex % 16;
+          const bassFreq = bassLine[currentStep];
+
+          if (bassFreq > 0) {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const filter = this.ctx.createBiquadFilter();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(bassFreq / 2, now);
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(480, now);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.masterGain);
+            osc.start(now);
+            osc.stop(now + 0.12);
+          }
+
+          if (currentStep % 2 === 0) {
+            const hatGain = this.ctx.createGain();
+            const osc = this.ctx.createOscillator();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(currentStep % 4 === 2 ? 8000 : 6000, now);
+            hatGain.gain.setValueAtTime(0.04, now);
+            hatGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+            osc.connect(hatGain);
+            hatGain.connect(this.masterGain);
+            osc.start(now);
+            osc.stop(now + 0.05);
+          }
+
+          if (currentStep === 4 || currentStep === 12) {
+            const snareOsc = this.ctx.createOscillator();
+            const snareGain = this.ctx.createGain();
+            snareOsc.type = 'triangle';
+            snareOsc.frequency.setValueAtTime(190, now);
+            snareOsc.frequency.exponentialRampToValueAtTime(60, now + 0.1);
+            snareGain.gain.setValueAtTime(0.18, now);
+            snareGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            snareOsc.connect(snareGain);
+            snareGain.connect(this.masterGain);
+            snareOsc.start(now);
+            snareOsc.stop(now + 0.11);
+          }
+
+          this.stepIndex++;
+        }, stepTimeMs);
+      }
+
+      stopBGM() {
+        if (this.bgmTimer) {
+          clearInterval(this.bgmTimer);
+          this.bgmTimer = null;
+        }
+        this.bgmPlaying = false;
+      }
+    }
+  </script>
+
+  <script>
+    /* ==========================================================================
+       REFRESH MAN: URBAN RUSH - INFINITE ARCADE ENGINE
+       Fix Tombol Arah + Karakter 3D Pilihan + Endless Procedural Mode
+       ========================================================================== */
+
+    // In Three.js chase camera looking down +Z:
+    // World +X maps to screen LEFT!
+    // World -X maps to screen RIGHT!
+    // Index 0: Kiri (+2.5), Index 1: Tengah (0.0), Index 2: Kanan (-2.5)
+    const CONFIG = {
+      LANES: [2.5, 0.0, -2.5],
+      ROAD_WIDTH: 7.5,
+      SIDEWALK_WIDTH: 2.25,
+      CHUNK_LENGTH: 60.0,
+      ACTIVE_CHUNKS: 6, // 360m infinite cycling window
+      
+      // Speed Scaling
+      INITIAL_BASE_SPEED: 13.0,
+      SPEED_GAIN_PER_100M: 0.7,
+      MAX_BASE_SPEED: 32.0, // Hyper speed after long distance!
+      DASH_SPEED_MULTIPLIER: 1.5,
+      DASH_DURATION_SEC: 2.6,
+      
+      // Vertical Kinematics
+      JUMP_INITIAL_VEL_Y: 8.6,
+      GRAVITY_UP: -28.0,
+      GRAVITY_DOWN: -50.4,
+      FAST_FALL_GRAVITY: -80.0,
+      SLIDE_DURATION: 0.52,
+      
+      // Hitbox dimensions
+      PLAYER_NORMAL_BOX: { w: 0.8, h: 1.8, d: 0.6 },
+      PLAYER_SLIDE_BOX: { w: 0.8, h: 0.72, d: 1.4 },
+      IFRAME_DURATION: 1.3,
+      STUMBLE_LOCKOUT_SEC: 0.48,
+      CAMERA_SHAKE_DURATION_MS: 250,
+      CAMERA_SHAKE_AMPLITUDE: 0.25,
+      
+      // Fixed time-step
+      FIXED_DT: 1 / 60,
+      MAX_ACCUMULATOR: 0.033
+    };
+
+    // 3 Unique 3D Characters Configuration
+    const CHARACTERS = {
+      1: {
+        id: 'REFRESH_MAN',
+        name: 'Refresh Man',
+        badge: 'REFRESH MAN',
+        badgeColor: 'bg-red-600',
+        title: 'Classic Soda Superhero',
+        primaryColor: 0xf0f3f8, // Chrome silver
+        accentColor: 0xff003f,  // Hero red
+        beltColor: 0xffbe0b,    // Gold
+        visorColor: 0x00f5d4,   // Neon cyan
+        capeColor: 0xd90429,
+        headStyle: 'classic_tab',
+        magnetRadius: 1.6,
+        dashGainPerCan: 10,
+        turnAgility: 16.0
+      },
+      2: {
+        id: 'VOLT_FIZZ',
+        name: 'Volt Fizz',
+        badge: 'VOLT FIZZ',
+        badgeColor: 'bg-yellow-500 text-black',
+        title: 'Electric Citrus Dynamo',
+        primaryColor: 0xffee00, // Electric yellow
+        accentColor: 0x141824,  // Carbon black
+        beltColor: 0x00f5d4,    // Cyan trim
+        visorColor: 0x00b4d8,   // Electric blue
+        capeColor: 0x00f5d4,
+        headStyle: 'twin_lightning',
+        magnetRadius: 1.6,
+        dashGainPerCan: 15,     // Faster Dash refill!
+        turnAgility: 17.5
+      },
+      3: {
+        id: 'BERRY_RUSH',
+        name: 'Berry Rush',
+        badge: 'BERRY RUSH',
+        badgeColor: 'bg-fuchsia-600',
+        title: 'Wild Berry Super-Speedster',
+        primaryColor: 0x2b0938, // Deep berry purple
+        accentColor: 0xff007f,  // Hot magenta pink
+        beltColor: 0xffd166,    // Amber
+        visorColor: 0xffea00,   // Bright amber visor
+        capeColor: 0x8338ec,
+        headStyle: 'ninja_crest',
+        magnetRadius: 2.3,      // Extra wide magnetic pull!
+        dashGainPerCan: 10,
+        turnAgility: 20.0       // Ultra snappy strafe!
+      }
+    };
+
+    let selectedCharId = 1;
+
+    // Runtime State Variables
+    let gameState = 'START'; // START, COUNTDOWN, RUNNING, STUMBLE, GAMEOVER, PAUSED
+    let score = 0;
+    let distanceTraveled = 0.0;
+    let cansCount = 0;
+    let health = 3;
+    let timer = 35.0; // Thirst energy countdown
+    let currentForwardSpeed = CONFIG.INITIAL_BASE_SPEED;
+    let isDashing = false;
+    let dashTimer = 0.0;
+    let dashMeterPct = 0;
+    let iFrameTimer = 0.0;
+    let stumbleTimer = 0.0;
+    let milestonePassed = 0;
+    let maxSpeedReached = 0;
+
+    // Kinematics
+    let currentLaneIndex = 1; // 0: Kiri (+2.5), 1: Tengah (0.0), 2: Kanan (-2.5)
+    let targetLaneX = 0.0;
+    let playerPosX = 0.0;
+    let playerPosY = 0.0;
+    let playerPosZ = 0.0;
+    let playerVelY = 0.0;
+    let isGrounded = true;
+    let isSliding = false;
+    let slideTimer = 0.0;
+    let runAnimTime = 0.0;
+    let cameraShakeTime = 0.0;
+
+    // Audio Engine
+    const sound = new RetroSoundEngine();
+
+    // Three.js Components
+    let scene, camera, renderer;
+    let playerGroup, playerMeshRef = {};
+    let roadChunks = [];
+    let activeHazards = [];
+    let activeCollectibles = [];
+    let particlesList = [];
+    let nextSpawnZ = 30.0;
+
+    // LocalStorage Helper
+    function getStoredRecord() {
+      try {
+        return {
+          score: parseInt(localStorage.getItem('refresh_man_infinite_score') || '0', 10),
+          dist: parseInt(localStorage.getItem('refresh_man_infinite_dist') || '0', 10)
+        };
+      } catch (e) {
+        return { score: 0, dist: 0 };
+      }
+    }
+
+    function saveStoredRecord(newScore, newDist) {
+      try {
+        const cur = getStoredRecord();
+        let isNew = false;
+        if (newScore > cur.score) {
+          localStorage.setItem('refresh_man_infinite_score', newScore.toString());
+          isNew = true;
+        }
+        if (newDist > cur.dist) {
+          localStorage.setItem('refresh_man_infinite_dist', newDist.toString());
+          isNew = true;
+        }
+        return isNew;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function initThreeScene() {
+      const container = document.getElementById('canvas-container');
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xa7d8ff);
+      scene.fog = new THREE.Fog(0xa7d8ff, 110.0, 195.0);
+
+      const aspect = window.innerWidth / window.innerHeight;
+      camera = new THREE.PerspectiveCamera(65, aspect, 0.1, 320);
+      camera.position.set(0, 2.8, -4.5);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.HemisphereLight(0x72d6f5, 0x3a3842, 0.7);
+      scene.add(ambientLight);
+
+      const sun = new THREE.DirectionalLight(0xfff5e4, 1.4);
+      sun.position.set(25, 45, -20);
+      sun.castShadow = true;
+      sun.shadow.mapSize.width = 1024;
+      sun.shadow.mapSize.height = 1024;
+      sun.shadow.camera.near = 10;
+      sun.shadow.camera.far = 130;
+      sun.shadow.camera.left = -22;
+      sun.shadow.camera.right = 22;
+      sun.shadow.camera.top = 22;
+      sun.shadow.camera.bottom = -22;
+      scene.add(sun);
+
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    function onWindowResize() {
+      if (!camera || !renderer) return;
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function buildCharacterModel(charConfig) {
+      if (playerGroup) {
+        scene.remove(playerGroup);
+      }
+
+      playerGroup = new THREE.Group();
+
+      const primaryMat = new THREE.MeshStandardMaterial({
+        color: charConfig.primaryColor,
+        roughness: 0.22,
+        metalness: 0.85,
+        flatShading: false
+      });
+      const accentMat = new THREE.MeshStandardMaterial({
+        color: charConfig.accentColor,
+        roughness: 0.28,
+        metalness: 0.35,
+        flatShading: false
+      });
+      const beltMat = new THREE.MeshStandardMaterial({
+        color: charConfig.beltColor,
+        roughness: 0.2,
+        metalness: 0.9,
+        flatShading: false
+      });
+      const darkJointMat = new THREE.MeshStandardMaterial({
+        color: 0x14161f,
+        roughness: 0.5,
+        metalness: 0.4
+      });
+      const visorMat = new THREE.MeshStandardMaterial({
+        color: charConfig.visorColor,
+        emissive: charConfig.visorColor,
+        emissiveIntensity: 0.85,
+        roughness: 0.1,
+        metalness: 0.95
+      });
+      const capeMat = new THREE.MeshStandardMaterial({
+        color: charConfig.capeColor,
+        roughness: 0.4,
+        metalness: 0.15,
+        side: THREE.DoubleSide
+      });
+
+      // Pelvis & Briefs
+      const pelvisGroup = new THREE.Group();
+      pelvisGroup.position.y = 0.82;
+      const pelvisMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.19, 0.26, 20), accentMat);
+      pelvisMesh.castShadow = true;
+      pelvisGroup.add(pelvisMesh);
+
+      // Belt
+      const beltRing = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.035, 12, 24), beltMat);
+      beltRing.rotation.x = Math.PI / 2;
+      beltRing.position.y = 0.11;
+      pelvisGroup.add(beltRing);
+
+      const canTabBuckle = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.022, 8, 16), primaryMat);
+      canTabBuckle.position.set(0, 0.11, 0.26);
+      pelvisGroup.add(canTabBuckle);
+
+      // Torso Group
+      const torsoGroup = new THREE.Group();
+      torsoGroup.position.y = 0.12;
+
+      const waistMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.23, 0.26, 20), primaryMat);
+      waistMesh.position.y = 0.13;
+      waistMesh.castShadow = true;
+      torsoGroup.add(waistMesh);
+
+      const chestMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.25, 0.38, 20), primaryMat);
+      chestMesh.position.y = 0.42;
+      chestMesh.castShadow = true;
+      torsoGroup.add(chestMesh);
+
+      // Otot Dada Melengkung
+      const pecGeo = new THREE.SphereGeometry(0.16, 16, 12);
+      pecGeo.scale(1.0, 0.8, 0.6);
+      const leftPec = new THREE.Mesh(pecGeo, primaryMat);
+      leftPec.position.set(-0.11, 0.45, 0.18);
+      torsoGroup.add(leftPec);
+
+      const rightPec = new THREE.Mesh(pecGeo, primaryMat);
+      rightPec.position.set(0.11, 0.45, 0.18);
+      torsoGroup.add(rightPec);
+
+      // Garis Balap Samping
+      const stripeGeo = new THREE.CylinderGeometry(0.355, 0.235, 0.58, 20, 1, true, -Math.PI * 0.15, Math.PI * 0.3);
+      const leftStripe = new THREE.Mesh(stripeGeo, accentMat);
+      leftStripe.position.y = 0.32;
+      leftStripe.rotation.y = -Math.PI / 2;
+      torsoGroup.add(leftStripe);
+
+      const rightStripe = new THREE.Mesh(stripeGeo, accentMat);
+      rightStripe.position.y = 0.32;
+      rightStripe.rotation.y = Math.PI / 2;
+      torsoGroup.add(rightStripe);
+
+      // Lambang Petir Emas di Dada
+      const emblemGroup = new THREE.Group();
+      emblemGroup.position.set(0, 0.46, 0.26);
+      const bolt1 = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.24, 4), new THREE.MeshBasicMaterial({ color: 0xffee00 }));
+      bolt1.rotation.z = 0.3;
+      bolt1.position.set(-0.02, 0.05, 0);
+      emblemGroup.add(bolt1);
+
+      const bolt2 = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.22, 4), new THREE.MeshBasicMaterial({ color: 0xffee00 }));
+      bolt2.rotation.z = Math.PI + 0.3;
+      bolt2.position.set(0.02, -0.05, 0);
+      emblemGroup.add(bolt2);
+      torsoGroup.add(emblemGroup);
+
+      const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.15, 0.14, 16), darkJointMat);
+      neck.position.y = 0.66;
+      torsoGroup.add(neck);
+
+      // Head & Helmet
+      const headGroup = new THREE.Group();
+      headGroup.position.y = 0.82;
+
+      const headCowl = new THREE.Mesh(new THREE.SphereGeometry(0.25, 24, 20), primaryMat);
+      headCowl.scale.set(1.0, 1.15, 1.05);
+      headCowl.castShadow = true;
+      headGroup.add(headCowl);
+
+      const helmetFin = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.06, 0.35, 12), accentMat);
+      helmetFin.rotation.x = Math.PI / 3;
+      helmetFin.position.set(0, 0.12, -0.15);
+      headGroup.add(helmetFin);
+
+      // Helmet Custom Accents based on character
+      if (charConfig.headStyle === 'classic_tab') {
+        const pullTabRing = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.02, 8, 20), primaryMat);
+        pullTabRing.rotation.y = Math.PI / 2;
+        pullTabRing.rotation.x = -0.3;
+        pullTabRing.position.set(0, 0.34, -0.04);
+        headGroup.add(pullTabRing);
+      } else if (charConfig.headStyle === 'twin_lightning') {
+        [-1, 1].forEach((dir) => {
+          const horn = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.32, 6), beltMat);
+          horn.rotation.z = dir * -0.5;
+          horn.rotation.x = -0.3;
+          horn.position.set(dir * 0.18, 0.28, -0.05);
+          headGroup.add(horn);
+        });
+      } else if (charConfig.headStyle === 'ninja_crest') {
+        const crest = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.3, 0.3), beltMat);
+        crest.position.set(0, 0.28, -0.05);
+        headGroup.add(crest);
+      }
+
+      // Visor Neon Cyber Melengkung
+      const visorGeo = new THREE.CylinderGeometry(0.265, 0.265, 0.13, 24, 1, true, -Math.PI * 0.45, Math.PI * 0.9);
+      const visorMesh = new THREE.Mesh(visorGeo, visorMat);
+      visorMesh.position.set(0, 0.04, 0.05);
+      headGroup.add(visorMesh);
+
+      [-1, 1].forEach((dir) => {
+        const winglet = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.16, 6), accentMat);
+        winglet.rotation.z = dir * -1.2;
+        winglet.rotation.x = -0.4;
+        winglet.position.set(dir * 0.26, 0.04, -0.06);
+        headGroup.add(winglet);
+      });
+
+      torsoGroup.add(headGroup);
+
+      // Cape Cloth Simulation Plane
+      const capeGeo = new THREE.PlaneGeometry(0.65, 1.1, 8, 12);
+      const capeMesh = new THREE.Mesh(capeGeo, capeMat);
+      capeMesh.position.set(0, 0.58, -0.22);
+      capeMesh.rotation.x = 0.25;
+      capeMesh.castShadow = true;
+      torsoGroup.add(capeMesh);
+
+      pelvisGroup.add(torsoGroup);
+
+      // Arms (with dynamic elbow flex)
+      const leftArmPivot = new THREE.Group();
+      leftArmPivot.position.set(-0.36, 0.56, 0);
+      const rightArmPivot = new THREE.Group();
+      rightArmPivot.position.set(0.36, 0.56, 0);
+
+      function buildArm(isLeft) {
+        const armContainer = new THREE.Group();
+        const pauldron = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 14), accentMat);
+        pauldron.scale.set(1.1, 1.0, 1.0);
+        pauldron.castShadow = true;
+        armContainer.add(pauldron);
+
+        const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.08, 0.28, 14), primaryMat);
+        upperArm.position.y = -0.16;
+        upperArm.castShadow = true;
+        armContainer.add(upperArm);
+
+        const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 12), darkJointMat);
+        elbow.position.y = -0.3;
+        armContainer.add(elbow);
+
+        const forearmPivot = new THREE.Group();
+        forearmPivot.position.y = -0.3;
+
+        const gauntlet = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.08, 0.28, 14), accentMat);
+        gauntlet.position.y = -0.14;
+        gauntlet.castShadow = true;
+        forearmPivot.add(gauntlet);
+
+        const fist = new THREE.Mesh(new THREE.SphereGeometry(0.088, 14, 14), accentMat);
+        fist.scale.set(0.9, 1.0, 1.25);
+        fist.position.set(0, -0.3, 0.03);
+        fist.castShadow = true;
+        forearmPivot.add(fist);
+
+        armContainer.add(forearmPivot);
+        return { armContainer, forearmPivot };
+      }
+
+      const leftArmData = buildArm(true);
+      leftArmPivot.add(leftArmData.armContainer);
+      torsoGroup.add(leftArmPivot);
+
+      const rightArmData = buildArm(false);
+      rightArmPivot.add(rightArmData.armContainer);
+      torsoGroup.add(rightArmPivot);
+
+      // Legs (with knee flex)
+      const leftLegPivot = new THREE.Group();
+      leftLegPivot.position.set(-0.16, 0, 0);
+      const rightLegPivot = new THREE.Group();
+      rightLegPivot.position.set(0.16, 0, 0);
+
+      function buildLeg(isLeft) {
+        const legContainer = new THREE.Group();
+        const side = isLeft ? -1 : 1;
+
+        const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.135, 0.095, 0.38, 16), primaryMat);
+        thigh.position.y = -0.19;
+        thigh.castShadow = true;
+        legContainer.add(thigh);
+
+        const kneeCap = new THREE.Mesh(new THREE.SphereGeometry(0.1, 14, 12), accentMat);
+        kneeCap.scale.set(1.0, 1.0, 1.2);
+        kneeCap.position.set(0, -0.38, 0.03);
+        legContainer.add(kneeCap);
+
+        const kneePivot = new THREE.Group();
+        kneePivot.position.y = -0.38;
+
+        const bootCalf = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.088, 0.36, 16), accentMat);
+        bootCalf.position.y = -0.18;
+        bootCalf.castShadow = true;
+        kneePivot.add(bootCalf);
+
+        const footMesh = new THREE.Mesh(new THREE.SphereGeometry(0.105, 14, 12), accentMat);
+        footMesh.scale.set(0.9, 0.75, 1.65);
+        footMesh.position.set(0, -0.36, 0.08);
+        footMesh.castShadow = true;
+        kneePivot.add(footMesh);
+
+        const bootWing = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.16, 4), primaryMat);
+        bootWing.rotation.x = -Math.PI / 3;
+        bootWing.rotation.z = side * 0.4;
+        bootWing.position.set(side * 0.11, -0.22, -0.05);
+        kneePivot.add(bootWing);
+
+        legContainer.add(kneePivot);
+        return { legContainer, kneePivot };
+      }
+
+      const leftLegData = buildLeg(true);
+      leftLegPivot.add(leftLegData.legContainer);
+      pelvisGroup.add(leftLegPivot);
+
+      const rightLegData = buildLeg(false);
+      rightLegPivot.add(rightLegData.legContainer);
+      pelvisGroup.add(rightLegPivot);
+
+      playerGroup.add(pelvisGroup);
+
+      // Cartoon Orbiting Stars on Stumble
+      const starsGroup = new THREE.Group();
+      starsGroup.position.y = 2.05;
+      starsGroup.visible = false;
+      const starGeo = new THREE.OctahedronGeometry(0.12, 0);
+      const starMat = new THREE.MeshBasicMaterial({ color: 0xffea00 });
+      for (let i = 0; i < 3; i++) {
+        const star = new THREE.Mesh(starGeo, starMat);
+        star.position.x = Math.cos((i * Math.PI * 2) / 3) * 0.42;
+        star.position.z = Math.sin((i * Math.PI * 2) / 3) * 0.42;
+        starsGroup.add(star);
+      }
+      playerGroup.add(starsGroup);
+
+      playerMeshRef = {
+        torsoGroup,
+        pelvisGroup,
+        headGroup,
+        leftArm: leftArmPivot,
+        rightArm: rightArmPivot,
+        leftForearm: leftArmData.forearmPivot,
+        rightForearm: rightArmData.forearmPivot,
+        leftLeg: leftLegPivot,
+        rightLeg: rightLegPivot,
+        leftKnee: leftLegData.kneePivot,
+        rightKnee: rightLegData.kneePivot,
+        capeMesh,
+        capeGeo,
+        starsGroup
+      };
+
+      scene.add(playerGroup);
+    }
+
+    function initInfiniteTrack() {
+      // Clear existing chunks
+      roadChunks.forEach((chunk) => scene.remove(chunk.group));
+      roadChunks = [];
+
+      // Create 6 road chunks (each 60m long => 360m infinite running corridor)
+      for (let i = 0; i < CONFIG.ACTIVE_CHUNKS; i++) {
+        const chunkZ = i * CONFIG.CHUNK_LENGTH;
+        const chunkObj = createSingleTrackChunk(chunkZ);
+        roadChunks.push(chunkObj);
+      }
+    }
+
+    function createSingleTrackChunk(startZ) {
+      const group = new THREE.Group();
+      const length = CONFIG.CHUNK_LENGTH;
+      const centerZ = startZ + length / 2;
+
+      const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x242730, roughness: 0.85 });
+      const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x5a5d68, roughness: 0.9 });
+      const curbMat = new THREE.MeshStandardMaterial({ color: 0xc4c7cc, roughness: 0.5 });
+      const lineMat = new THREE.MeshBasicMaterial({ color: 0xffc700 });
+      const buildingColors = [0x415a77, 0x778da9, 0xe0e1dd, 0x1b263b, 0xd90429, 0x3a86ff, 0x5c677d];
+
+      // Road Surface
+      const roadGeo = new THREE.PlaneGeometry(CONFIG.ROAD_WIDTH, length);
+      const road = new THREE.Mesh(roadGeo, asphaltMat);
+      road.rotation.x = -Math.PI / 2;
+      road.position.set(0, 0, 0);
+      road.receiveShadow = true;
+      group.add(road);
+
+      // Sidewalks Left & Right
+      [-1, 1].forEach((side) => {
+        const swGeo = new THREE.BoxGeometry(CONFIG.SIDEWALK_WIDTH, 0.25, length);
+        const sw = new THREE.Mesh(swGeo, sidewalkMat);
+        sw.position.set(side * (CONFIG.ROAD_WIDTH / 2 + CONFIG.SIDEWALK_WIDTH / 2), 0.1, 0);
+        sw.receiveShadow = true;
+        group.add(sw);
+
+        const curbGeo = new THREE.BoxGeometry(0.2, 0.3, length);
+        const curb = new THREE.Mesh(curbGeo, curbMat);
+        curb.position.set(side * (CONFIG.ROAD_WIDTH / 2), 0.15, 0);
+        group.add(curb);
+      });
+
+      // Yellow Dashed Lane Lines at X = -1.25 and X = +1.25
+      [-1.25, 1.25].forEach((lx) => {
+        for (let lz = -length / 2 + 3; lz < length / 2; lz += 6) {
+          const dashGeo = new THREE.PlaneGeometry(0.18, 3.2);
+          const dash = new THREE.Mesh(dashGeo, lineMat);
+          dash.rotation.x = -Math.PI / 2;
+          dash.position.set(lx, 0.02, lz);
+          group.add(dash);
+        }
+      });
+
+      // City Skyscraper Buildings flanking the road
+      for (let bz = -length / 2 + 10; bz < length / 2; bz += 20) {
+        [-1, 1].forEach((side) => {
+          const bWidth = 12 + Math.random() * 8;
+          const bHeight = 25 + Math.random() * 45;
+          const bDepth = 16 + Math.random() * 6;
+          const bColor = buildingColors[Math.floor(Math.random() * buildingColors.length)];
+          const bMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(bWidth, bHeight, bDepth),
+            new THREE.MeshStandardMaterial({ color: bColor, roughness: 0.6 })
+          );
+          bMesh.position.set(side * (CONFIG.ROAD_WIDTH / 2 + CONFIG.SIDEWALK_WIDTH + bWidth / 2 + 1.5), bHeight / 2, bz);
+          bMesh.castShadow = true;
+          bMesh.receiveShadow = true;
+          group.add(bMesh);
+
+          if (Math.random() > 0.6) {
+            const bbGeo = new THREE.BoxGeometry(6, 3, 0.3);
+            const bbMat = new THREE.MeshBasicMaterial({ color: Math.random() > 0.5 ? 0xff0055 : 0x00f5d4 });
+            const bb = new THREE.Mesh(bbGeo, bbMat);
+            bb.position.set(side * (CONFIG.ROAD_WIDTH / 2 + CONFIG.SIDEWALK_WIDTH + 1), 8 + Math.random() * 6, bz);
+            group.add(bb);
+          }
+        });
+      }
+
+      group.position.set(0, 0, centerZ);
+      scene.add(group);
+
+      return {
+        group,
+        startZ,
+        centerZ,
+        endZ: startZ + length
+      };
+    }
+
+    function updateTrackChunks(playerZ) {
+      // If player passed the first chunk, move it to the farthest front
+      for (let i = 0; i < roadChunks.length; i++) {
+        const chunk = roadChunks[i];
+        if (playerZ - chunk.endZ > 30.0) {
+          // Find max endZ among current chunks
+          let maxEndZ = -Infinity;
+          for (let j = 0; j < roadChunks.length; j++) {
+            if (roadChunks[j].endZ > maxEndZ) maxEndZ = roadChunks[j].endZ;
+          }
+
+          // Recycle this chunk
+          chunk.startZ = maxEndZ;
+          chunk.centerZ = maxEndZ + CONFIG.CHUNK_LENGTH / 2;
+          chunk.endZ = maxEndZ + CONFIG.CHUNK_LENGTH;
+          chunk.group.position.z = chunk.centerZ;
+        }
+      }
+    }
+
+    function clearDynamicEntities() {
+      activeHazards.forEach((h) => scene.remove(h.mesh));
+      activeCollectibles.forEach((c) => scene.remove(c.mesh));
+      activeHazards = [];
+      activeCollectibles = [];
+      nextSpawnZ = 30.0;
+    }
+
+    function updateDynamicEntities(playerZ) {
+      // 1. Recycle / Remove entities behind player
+      for (let i = activeHazards.length - 1; i >= 0; i--) {
+        const h = activeHazards[i];
+        if (playerZ - h.mesh.position.z > 20.0) {
+          scene.remove(h.mesh);
+          activeHazards.splice(i, 1);
+        }
+      }
+
+      for (let i = activeCollectibles.length - 1; i >= 0; i--) {
+        const c = activeCollectibles[i];
+        if (playerZ - c.z > 20.0) {
+          scene.remove(c.mesh);
+          activeCollectibles.splice(i, 1);
+        }
+      }
+
+      // 2. Procedurally generate ahead up to playerZ + 200m
+      while (nextSpawnZ < playerZ + 220.0) {
+        spawnPatternAt(nextSpawnZ);
+        // Interval between hazard patterns decreases as player runs farther
+        const spacing = Math.max(16.0, 26.0 - Math.min(distanceTraveled / 400.0, 8.0));
+        nextSpawnZ += spacing;
+      }
+    }
+
+    function spawnPatternAt(z) {
+      // Pick random lane (0: Kiri, 1: Tengah, 2: Kanan)
+      const lane = Math.floor(Math.random() * 3);
+      const laneX = CONFIG.LANES[lane];
+      const roll = Math.random();
+
+      // Difficulty ramps with distance
+      if (distanceTraveled < 150) {
+        // Mostly low jump barricades
+        createBarricadeHazard(laneX, z);
+      } else if (distanceTraveled < 400) {
+        if (roll < 0.4) createBarricadeHazard(laneX, z);
+        else if (roll < 0.75) createHangingBannerHazard(laneX, z);
+        else createSedanHazard(lane === 2 ? 1 : lane, z);
+      } else {
+        // High speed chaos: All hazards including moving glass
+        if (roll < 0.3) createBarricadeHazard(laneX, z);
+        else if (roll < 0.6) createHangingBannerHazard(laneX, z);
+        else if (roll < 0.82) createSedanHazard(lane === 2 ? 1 : lane, z);
+        else createGlassWorkersHazard(z);
+      }
+
+      // Spawn Soda Can pickups in free lanes or ahead of obstacles
+      const freeLane = (lane + 1 + Math.floor(Math.random() * 2)) % 3;
+      spawnSodaCan(CONFIG.LANES[freeLane], z + (Math.random() - 0.5) * 6);
+      if (Math.random() > 0.4) {
+        spawnSodaCan(CONFIG.LANES[freeLane], z + 5.0);
+      }
+    }
+
+    function createBarricadeHazard(x, z) {
+      const g = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({ color: 0xee964b, roughness: 0.8 });
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.35, 0.2), mat);
+      bar.position.y = 0.65;
+      bar.castShadow = true;
+      g.add(bar);
+
+      const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.9, 0.18), mat);
+      p1.position.set(-0.9, 0.45, 0);
+      g.add(p1);
+      const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.9, 0.18), mat);
+      p2.position.set(0.9, 0.45, 0);
+      g.add(p2);
+
+      g.position.set(x, 0, z);
+      scene.add(g);
+
+      activeHazards.push({
+        mesh: g,
+        type: 'LOW_JUMP',
+        bounds: { minX: x - 1.1, maxX: x + 1.1, minY: 0.0, maxY: 0.95, minZ: z - 0.3, maxZ: z + 0.3 },
+        active: true
+      });
+    }
+
+    function createHangingBannerHazard(x, z) {
+      const g = new THREE.Group();
+      const bannerMat = new THREE.MeshStandardMaterial({ color: 0xff0055, roughness: 0.3 });
+      const banner = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.4, 0.25), bannerMat);
+      banner.position.y = 1.9;
+      banner.castShadow = true;
+      g.add(banner);
+
+      const warnBar = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.2, 0.28), new THREE.MeshBasicMaterial({ color: 0xffc700 }));
+      warnBar.position.y = 1.25;
+      g.add(warnBar);
+
+      g.position.set(x, 0, z);
+      scene.add(g);
+
+      activeHazards.push({
+        mesh: g,
+        type: 'HIGH_SLIDE',
+        bounds: { minX: x - 1.2, maxX: x + 1.2, minY: 1.05, maxY: 2.7, minZ: z - 0.3, maxZ: z + 0.3 },
+        active: true
+      });
+    }
+
+    function createSedanHazard(laneIdx, z) {
+      const g = new THREE.Group();
+      const centerX = (CONFIG.LANES[laneIdx] + CONFIG.LANES[laneIdx + 1]) / 2;
+      const carMat = new THREE.MeshStandardMaterial({ color: 0xd90429, roughness: 0.4, metalness: 0.6 });
+
+      const carBody = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.9, 2.0), carMat);
+      carBody.position.y = 0.55;
+      carBody.castShadow = true;
+      g.add(carBody);
+
+      const carRoof = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.65, 1.4), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+      carRoof.position.set(0, 1.15, 0);
+      g.add(carRoof);
+
+      g.position.set(centerX, 0, z);
+      scene.add(g);
+
+      activeHazards.push({
+        mesh: g,
+        type: 'MULTI_LANE_CAR',
+        bounds: { minX: Math.min(centerX - 2.25, centerX + 2.25), maxX: Math.max(centerX - 2.25, centerX + 2.25), minY: 0.0, maxY: 1.5, minZ: z - 1.1, maxZ: z + 1.1 },
+        active: true
+      });
+    }
+
+    function createGlassWorkersHazard(z) {
+      const g = new THREE.Group();
+      const glassMat = new THREE.MeshStandardMaterial({ color: 0x90e0ef, transparent: true, opacity: 0.65 });
+      const glass = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.5, 0.15), glassMat);
+      glass.position.y = 1.1;
+      g.add(glass);
+
+      const frameMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+      const f1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.5, 0.2), frameMat);
+      f1.position.set(-1.3, 1.1, 0);
+      g.add(f1);
+      const f2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.5, 0.2), frameMat);
+      f2.position.set(1.3, 1.1, 0);
+      g.add(f2);
+
+      g.position.set(0, 0, z);
+      scene.add(g);
+
+      activeHazards.push({
+        mesh: g,
+        type: 'DYNAMIC_GLASS',
+        movingX: true,
+        vx: 1.6,
+        xMin: -2.2,
+        xMax: 2.2,
+        bounds: { minX: -1.3, maxX: 1.3, minY: 0.0, maxY: 1.9, minZ: z - 0.25, maxZ: z + 0.25 },
+        active: true
+      });
+    }
+
+    function spawnSodaCan(x, yZ) {
+      const canGroup = new THREE.Group();
+      const canMat = new THREE.MeshStandardMaterial({ color: 0xff003f, roughness: 0.2, metalness: 0.85 });
+      const canTopMat = new THREE.MeshStandardMaterial({ color: 0xe8ecf1, roughness: 0.3, metalness: 0.9 });
+
+      const canBody = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.5, 16), canMat);
+      canBody.castShadow = true;
+      canGroup.add(canBody);
+
+      const canLid = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.05, 16), canTopMat);
+      canLid.position.y = 0.26;
+      canGroup.add(canLid);
+
+      canGroup.position.set(x, 0.65, yZ);
+      scene.add(canGroup);
+
+      activeCollectibles.push({
+        mesh: canGroup,
+        x: x,
+        y: 0.65,
+        z: yZ,
+        collected: false
+      });
+    }
+
+    function spawnSparkleParticles(x, y, z) {
+      for (let i = 0; i < 12; i++) {
+        const geo = new THREE.OctahedronGeometry(0.1, 0);
+        const mat = new THREE.MeshBasicMaterial({ color: 0xffee00 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, y, z);
+        scene.add(mesh);
+
+        const angle = (i / 12) * Math.PI * 2;
+        const speed = 2.0 + Math.random() * 2.5;
+        particlesList.push({
+          mesh,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed + 1.5,
+          vz: (Math.random() - 0.5) * 2,
+          life: 0.45,
+          maxLife: 0.45
+        });
+      }
+    }
+
+    function spawnDustPuff(x, y, z) {
+      for (let i = 0; i < 4; i++) {
+        const geo = new THREE.SphereGeometry(0.14, 6, 6);
+        const mat = new THREE.MeshBasicMaterial({ color: 0xbbbbbb, transparent: true, opacity: 0.7 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x + (Math.random() - 0.5) * 0.4, y, z);
+        scene.add(mesh);
+        particlesList.push({
+          mesh,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: Math.random() * 1.2,
+          vz: -2.0,
+          life: 0.35,
+          maxLife: 0.35
+        });
+      }
+    }
+
+    function updateParticles(dt) {
+      for (let i = particlesList.length - 1; i >= 0; i--) {
+        const p = particlesList[i];
+        p.life -= dt;
+        if (p.life <= 0) {
+          scene.remove(p.mesh);
+          particlesList.splice(i, 1);
+        } else {
+          p.mesh.position.x += p.vx * dt;
+          p.mesh.position.y += p.vy * dt;
+          p.mesh.position.z += p.vz * dt;
+          const scale = p.life / p.maxLife;
+          p.mesh.scale.set(scale, scale, scale);
+        }
+      }
+    }
+
+    function setupInputHandlers() {
+      window.addEventListener('keydown', (e) => {
+        if (gameState === 'START') {
+          if (e.code === 'Space' || e.code === 'Enter') startGameSequence();
+          return;
+        }
+        if (gameState === 'GAMEOVER') {
+          if (e.code === 'KeyR' || e.code === 'Space') resetGameSession();
+          return;
+        }
+        if (gameState !== 'RUNNING') return;
+
+        switch (e.code) {
+          case 'ArrowLeft':
+          case 'KeyA':
+            // Geser ke KIRI layar (Index 0 = +2.5)
+            triggerLaneShift(-1);
+            break;
+          case 'ArrowRight':
+          case 'KeyD':
+            // Geser ke KANAN layar (Index 2 = -2.5)
+            triggerLaneShift(1);
+            break;
+          case 'ArrowUp':
+          case 'KeyW':
+          case 'Space':
+            triggerJump();
+            break;
+          case 'ArrowDown':
+          case 'KeyS':
+            triggerSlide();
+            break;
+          case 'ShiftLeft':
+          case 'ShiftRight':
+          case 'KeyE':
+            triggerDash();
+            break;
+          case 'KeyP':
+          case 'Escape':
+            togglePause();
+            break;
+        }
+      });
+
+      // Virtual Mobile Touch Controls
+      document.getElementById('touch-left').addEventListener('click', () => triggerLaneShift(-1));
+      document.getElementById('touch-right').addEventListener('click', () => triggerLaneShift(1));
+      document.getElementById('touch-jump').addEventListener('click', triggerJump);
+      document.getElementById('touch-slide').addEventListener('click', triggerSlide);
+      document.getElementById('touch-dash').addEventListener('click', triggerDash);
+
+      // Mobile Swipe Gestures
+      let touchStartX = 0;
+      let touchStartY = 0;
+      window.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+      }, { passive: true });
+
+      window.addEventListener('touchend', (e) => {
+        if (gameState !== 'RUNNING') return;
+        const dx = e.changedTouches[0].screenX - touchStartX;
+        const dy = e.changedTouches[0].screenY - touchStartY;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          if (Math.abs(dx) > 30) {
+            // Swipe Kiri (dx < 0) => geser kiri (-1)
+            // Swipe Kanan (dx > 0) => geser kanan (+1)
+            triggerLaneShift(dx > 0 ? 1 : -1);
+          }
+        } else {
+          if (dy < -30) triggerJump();
+          else if (dy > 30) triggerSlide();
+        }
+      }, { passive: true });
+
+      window.addEventListener('blur', () => {
+        if (gameState === 'RUNNING') togglePause();
+      });
+
+      // UI Character Card Selection
+      [1, 2, 3].forEach((id) => {
+        const card = document.getElementById(`card-char-1`);
+        document.getElementById(`card-char-${id}`).addEventListener('click', () => {
+          selectCharacter(id);
+        });
+      });
+
+      document.getElementById('btn-start').addEventListener('click', startGameSequence);
+      document.getElementById('btn-restart').addEventListener('click', resetGameSession);
+      document.getElementById('btn-audio-toggle').addEventListener('click', () => {
+        sound.init();
+        const muted = sound.toggleMute();
+        document.getElementById('audio-icon').textContent = muted ? '🔇' : '🔊';
+        document.getElementById('audio-label').textContent = muted ? 'AUDIO BISU' : 'AUDIO AKTIF';
+      });
+    }
+
+    function selectCharacter(id) {
+      selectedCharId = id;
+      const charConfig = CHARACTERS[id];
+
+      // Update UI cards
+      [1, 2, 3].forEach((cid) => {
+        const card = document.getElementById(`card-char-${cid}`);
+        if (cid === id) card.classList.add('active');
+        else card.classList.remove('active');
+      });
+
+      document.getElementById('selected-char-name').textContent = charConfig.name;
+      
+      // Update in-game HUD hero badge
+      const badge = document.getElementById('hud-hero-badge');
+      badge.textContent = charConfig.badge;
+      badge.className = `px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${charConfig.badgeColor}`;
+
+      // Rebuild 3D Model with newly selected character's materials & mesh
+      buildCharacterModel(charConfig);
+      sound.playCanPickup();
+    }
+
+    // Lane shifting with direction fix:
+    // dir = -1 => KIRI (Index berkurang menuju 0 = +2.5m di layar kiri)
+    // dir = +1 => KANAN (Index bertambah menuju 2 = -2.5m di layar kanan)
+    function triggerLaneShift(dir) {
+      if (gameState !== 'RUNNING') return;
+      const nextLane = currentLaneIndex + dir;
+      if (nextLane >= 0 && nextLane <= 2) {
+        currentLaneIndex = nextLane;
+        targetLaneX = CONFIG.LANES[currentLaneIndex];
+        sound.playLaneShift();
+      }
+    }
+
+    function triggerJump() {
+      if (gameState !== 'RUNNING') return;
+      sound.playCrash();
+      triggerGameOver('KAMU MENEKAN TOMBOL ATAS / LOMPAT!');
+    }
+
+    function triggerSlide() {
+      if (gameState !== 'RUNNING') return;
+      if (!isGrounded) {
+        playerVelY = Math.min(playerVelY, -8.0);
+      } else {
+        isSliding = true;
+        slideTimer = CONFIG.SLIDE_DURATION;
+        sound.playSlide();
+        spawnDustPuff(playerPosX, 0.1, playerPosZ);
+      }
+    }
+
+    function triggerDash() {
+      if (gameState !== 'RUNNING' || isDashing) return;
+      if (dashMeterPct >= 100) {
+        isDashing = true;
+        dashTimer = CONFIG.DASH_DURATION_SEC;
+        dashMeterPct = 0;
+        sound.playDash();
+        showBanner('TURBO DASH!', 'SPRINT KECEPATAN CAHAYA!', 1200);
+        document.body.classList.add('dash-active');
+      }
+    }
+
+    function togglePause() {
+      if (gameState === 'RUNNING') {
+        gameState = 'PAUSED';
+        showBanner('JEDA', 'TEKAN P ATAU ESC UNTUK LANJUT', 0);
+      } else if (gameState === 'PAUSED') {
+        gameState = 'RUNNING';
+        hideBanner();
+      }
+    }
+
+    let bannerHideTimeout = null;
+    function showBanner(title, sub = '', autoHideMs = 1500) {
+      const banner = document.getElementById('banner-container');
+      document.getElementById('banner-text').textContent = title;
+      document.getElementById('banner-sub').textContent = sub;
+      banner.classList.remove('opacity-0', 'scale-75');
+      banner.classList.add('opacity-100', 'scale-100');
+
+      if (bannerHideTimeout) clearTimeout(bannerHideTimeout);
+      if (autoHideMs > 0) {
+        bannerHideTimeout = setTimeout(hideBanner, autoHideMs);
+      }
+    }
+
+    function hideBanner() {
+      const banner = document.getElementById('banner-container');
+      banner.classList.add('opacity-0', 'scale-75');
+      banner.classList.remove('opacity-100', 'scale-100');
+    }
+
+    function startGameSequence() {
+      sound.init();
+      sound.startBGM();
+      document.getElementById('start-screen').classList.add('hidden');
+      resetSessionVariables();
+
+      gameState = 'COUNTDOWN';
+      let count = 3;
+      showBanner('3', 'SIAP-SIAP!', 800);
+      sound.playBeep(false);
+
+      const countInterval = setInterval(() => {
+        count--;
+        if (count === 2) {
+          showBanner('2', 'FOKUS!', 800);
+          sound.playBeep(false);
+        } else if (count === 1) {
+          showBanner('1', 'GAS!', 800);
+          sound.playBeep(false);
+        } else if (count === 0) {
+          clearInterval(countInterval);
+          showBanner('LARI!', 'PECAHKAN REKOR KOTA!', 1000);
+          sound.playBeep(true);
+          gameState = 'RUNNING';
+        }
+      }, 850);
+    }
+
+    function resetSessionVariables() {
+      score = 0;
+      distanceTraveled = 0.0;
+      cansCount = 0;
+      health = 3;
+      timer = 35.0; // 35 seconds thirst fuel initially
+      currentForwardSpeed = CONFIG.INITIAL_BASE_SPEED;
+      isDashing = false;
+      dashTimer = 0.0;
+      dashMeterPct = 0;
+      iFrameTimer = 0.0;
+      stumbleTimer = 0.0;
+      milestonePassed = 0;
+      maxSpeedReached = 0;
+
+      currentLaneIndex = 1;
+      targetLaneX = 0.0;
+      playerPosX = 0.0;
+      playerPosY = 0.0;
+      playerPosZ = 0.0;
+      playerVelY = 0.0;
+      isGrounded = true;
+      isSliding = false;
+      slideTimer = 0.0;
+
+      document.body.classList.remove('dash-active');
+      playerGroup.position.set(0, 0, 0);
+      playerGroup.rotation.set(0, 0, 0);
+
+      initInfiniteTrack();
+      clearDynamicEntities();
+      updateHUD();
+    }
+
+    function resetGameSession() {
+      document.getElementById('gameover-screen').classList.add('hidden');
+      startGameSequence();
+    }
+
+    function fixedPhysicsTick(dt) {
+      if (gameState !== 'RUNNING' && gameState !== 'STUMBLE') return;
+
+      const charConfig = CHARACTERS[selectedCharId];
+
+      // 1. Progressive Velocity Scaling ("Makin lama makin cepat")
+      // Base speed scales with distance traveled (from 13 m/s up to 32 m/s max)
+      const calculatedBaseSpeed = Math.min(
+        CONFIG.MAX_BASE_SPEED,
+        CONFIG.INITIAL_BASE_SPEED + (distanceTraveled / 100.0) * CONFIG.SPEED_GAIN_PER_100M
+      );
+      currentForwardSpeed = calculatedBaseSpeed;
+
+      let forwardSpeed = currentForwardSpeed;
+      if (isDashing) {
+        forwardSpeed *= CONFIG.DASH_SPEED_MULTIPLIER;
+        dashTimer -= dt;
+        if (dashTimer <= 0) {
+          isDashing = false;
+          document.body.classList.remove('dash-active');
+        }
+      }
+
+      if (gameState === 'STUMBLE') {
+        forwardSpeed = 5.0;
+        stumbleTimer -= dt;
+        if (stumbleTimer <= 0) {
+          gameState = 'RUNNING';
+          playerMeshRef.starsGroup.visible = false;
+        }
+      }
+
+      // Track max speed
+      const speedKmh = Math.round(forwardSpeed * 3.6);
+      if (speedKmh > maxSpeedReached) maxSpeedReached = speedKmh;
+
+      // Distance advancement in Z
+      const deltaZ = forwardSpeed * dt;
+      playerPosZ += deltaZ;
+      distanceTraveled = playerPosZ;
+
+      // Score increases: setiap interval jarak tambah 10.000 poin
+      if (Math.floor(playerPosZ / 10) > Math.floor((playerPosZ - deltaZ) / 10)) {
+        score += 10000;
+      }
+
+      // Distance Milestone Announcer (Every 250m)
+      const currentMilestone = Math.floor(distanceTraveled / 250);
+      if (currentMilestone > milestonePassed) {
+        milestonePassed = currentMilestone;
+        showBanner(`${milestonePassed * 250}M TERTEMBUS!`, 'KECEPATAN BERTAMBAH!', 1000);
+        sound.playRecordChime();
+      }
+
+      // 2. Lateral Lane Shift (Smooth Snappy Lerp with Banking)
+      const lerpSpeed = charConfig.turnAgility;
+      playerPosX += (targetLaneX - playerPosX) * Math.min(lerpSpeed * dt, 1.0);
+      const laneDeltaX = targetLaneX - playerPosX;
+      // Banking tilt: lean into the turn (+laneDeltaX tilts top to left/right accurately)
+      const targetRoll = laneDeltaX * 0.12;
+
+      // 3. Vertical Kinematics
+      if (!isGrounded) {
+        const gravity = isSliding ? CONFIG.FAST_FALL_GRAVITY : (playerVelY > 0 ? CONFIG.GRAVITY_UP : CONFIG.GRAVITY_DOWN);
+        playerVelY += gravity * dt;
+        playerPosY += playerVelY * dt;
+
+        if (playerPosY <= 0) {
+          playerPosY = 0;
+          playerVelY = 0;
+          isGrounded = true;
+          spawnDustPuff(playerPosX, 0.05, playerPosZ);
+        }
+      }
+
+      // 4. Slide Duration
+      if (isSliding) {
+        slideTimer -= dt;
+        if (slideTimer <= 0) {
+          isSliding = false;
+        }
+      }
+
+      // Update Player Mesh Transform
+      playerGroup.position.set(playerPosX, playerPosY, playerPosZ);
+      playerGroup.rotation.z = targetRoll;
+
+      // 5. Thirst Energy Countdown (Di-maintain penuh agar tidak mati dehidrasi)
+      timer = 45.0;
+
+      // iFrame decay
+      if (iFrameTimer > 0) {
+        iFrameTimer -= dt;
+        playerGroup.visible = Math.floor(iFrameTimer * 20) % 2 === 0;
+      } else {
+        playerGroup.visible = true;
+      }
+
+      // 6. Update Infinite Road Chunks and Spawner
+      updateTrackChunks(playerPosZ);
+      updateDynamicEntities(playerPosZ);
+
+      // 7. Overlap Checks
+      checkCollectiblesOverlap(charConfig.magnetRadius, charConfig.dashGainPerCan);
+
+      if (iFrameTimer <= 0 && gameState === 'RUNNING') {
+        checkHazardsCollision();
+      }
+
+      // Dynamic moving glass workers
+      activeHazards.forEach((h) => {
+        if (h.movingX) {
+          h.mesh.position.x += h.vx * dt;
+          if (h.mesh.position.x > h.xMax) {
+            h.mesh.position.x = h.xMax;
+            h.vx = -Math.abs(h.vx);
+          } else if (h.mesh.position.x < h.xMin) {
+            h.mesh.position.x = h.xMin;
+            h.vx = Math.abs(h.vx);
+          }
+          h.bounds.minX = h.mesh.position.x - 1.3;
+          h.bounds.maxX = h.mesh.position.x + 1.3;
+        }
+      });
+    }
+
+    function checkHazardsCollision() {
+      const halfW = isSliding ? CONFIG.PLAYER_SLIDE_BOX.w / 2 : CONFIG.PLAYER_NORMAL_BOX.w / 2;
+      const height = isSliding ? CONFIG.PLAYER_SLIDE_BOX.h : CONFIG.PLAYER_NORMAL_BOX.h;
+      const halfD = isSliding ? CONFIG.PLAYER_SLIDE_BOX.d / 2 : CONFIG.PLAYER_NORMAL_BOX.d / 2;
+
+      const pBox = {
+        minX: playerPosX - halfW,
+        maxX: playerPosX + halfW,
+        minY: playerPosY,
+        maxY: playerPosY + height,
+        minZ: playerPosZ - halfD,
+        maxZ: playerPosZ + halfD
+      };
+
+      for (let i = 0; i < activeHazards.length; i++) {
+        const h = activeHazards[i];
+        if (!h.active) continue;
+        if (Math.abs(playerPosZ - h.mesh.position.z) > 4.0) continue;
+
+        const b = h.bounds;
+        const overlapX = pBox.minX <= b.maxX && pBox.maxX >= b.minX;
+        const overlapY = pBox.minY <= b.maxY && pBox.maxY >= b.minY;
+        const overlapZ = pBox.minZ <= b.maxZ && pBox.maxZ >= b.minZ;
+
+        if (overlapX && overlapY && overlapZ) {
+          handleCollisionHit(h);
+          break;
+        }
+      }
+    }
+
+    function handleCollisionHit(hazard) {
+      // Kebal: tidak mengurangi darah dan tidak memicu game over
+      sound.playCrash();
+      showDamageFlash();
+      showBanner('NABRAK!', 'KEBAL! LANJUT GAS TERUS!', 600);
+      updateHUD();
+    }
+
+    function showDamageFlash() {
+      const flash = document.getElementById('damage-flash');
+      flash.style.opacity = '1';
+      setTimeout(() => {
+        flash.style.opacity = '0';
+      }, 150);
+    }
+
+    function checkCollectiblesOverlap(magnetRadius, dashGain) {
+      activeCollectibles.forEach((c) => {
+        if (c.collected) return;
+        const dz = Math.abs(playerPosZ - c.z);
+        if (dz > 3.0) return;
+
+        const dx = playerPosX - c.x;
+        const dy = (playerPosY + 0.8) - c.y;
+        const distSq = dx * dx + dy * dy + dz * dz;
+
+        if (distSq <= magnetRadius * magnetRadius) {
+          c.collected = true;
+          c.mesh.visible = false;
+          cansCount++;
+          score += 10000;
+          timer = Math.min(45.0, timer + 2.5); // +2.5s thirst recharge
+
+          if (!isDashing) {
+            dashMeterPct = Math.min(100, dashMeterPct + dashGain);
+          }
+
+          sound.playCanPickup();
+          spawnSparkleParticles(c.x, c.y, c.z);
+          updateHUD();
+        }
+      });
+    }
+
+    function triggerGameOver(reason) {
+      gameState = 'GAMEOVER';
+      showBanner('DEHIDRASI!', reason, 2000);
+      sound.playCrash();
+
+      playerGroup.rotation.x = -Math.PI / 2;
+      playerGroup.position.y = 0.2;
+
+      setTimeout(() => {
+        showEndModal();
+      }, 1500);
+    }
+
+    function showEndModal() {
+      const screen = document.getElementById('gameover-screen');
+      const finalDistM = Math.floor(distanceTraveled);
+      const cansScore = cansCount * 150;
+      const finalTotalScore = score + cansScore;
+
+      document.getElementById('end-dist-val').textContent = `${finalDistM} meter`;
+      document.getElementById('end-cans-count').textContent = cansCount;
+      document.getElementById('end-cans-score').textContent = `+${cansScore}`;
+      document.getElementById('end-speed-val').textContent = `${maxSpeedReached} KM/H`;
+      document.getElementById('end-final-score').textContent = finalTotalScore.toLocaleString();
+
+      const isNew = saveStoredRecord(finalTotalScore, finalDistM);
+      const newHighBadge = document.getElementById('new-high-badge');
+      if (isNew) {
+        newHighBadge.classList.remove('hidden');
+        sound.playRecordChime();
+      } else {
+        newHighBadge.classList.add('hidden');
+      }
+
+      screen.classList.remove('hidden');
+    }
+
+    function updateHUD() {
+      document.getElementById('hud-score').textContent = score.toString().padStart(5, '0');
+      document.getElementById('hud-cans').textContent = `x${cansCount.toString().padStart(2, '0')}`;
+      document.getElementById('hud-timer').textContent = timer.toFixed(1);
+      document.getElementById('hud-distance').textContent = Math.floor(distanceTraveled);
+
+      // Speed Tier
+      const tier = Math.min(5, Math.floor(currentForwardSpeed / 6));
+      document.getElementById('hud-tier').textContent = tier >= 4 ? 'HYPER' : tier;
+
+      // Speedometer
+      let spd = currentForwardSpeed * (isDashing ? CONFIG.DASH_SPEED_MULTIPLIER : 1.0);
+      document.getElementById('hud-speedometer').textContent = Math.round(spd * 3.6);
+
+      // High Score label
+      const records = getStoredRecord();
+      document.getElementById('hud-high-score-val').textContent = records.score.toLocaleString();
+
+      // Dash Bar
+      const dashFill = document.getElementById('hud-dash-fill');
+      const dashText = document.getElementById('dash-pct-text');
+      const dashHint = document.getElementById('dash-ready-hint');
+      dashFill.style.width = `${dashMeterPct}%`;
+      dashText.textContent = `${dashMeterPct}%`;
+      dashHint.style.opacity = dashMeterPct >= 100 ? '1' : '0';
+
+      // Life Icons
+      for (let i = 1; i <= 3; i++) {
+        const canIcon = document.getElementById(`life-${i}`);
+        if (i <= health) {
+          canIcon.style.opacity = '1';
+          canIcon.classList.remove('grayscale');
+        } else {
+          canIcon.style.opacity = '0.25';
+          canIcon.classList.add('grayscale');
+        }
+      }
+    }
+
+    function updateCameraRig(dt) {
+      if (!camera) return;
+
+      const targetCamX = playerPosX * 0.7;
+      const targetCamY = 2.8 + playerPosY * 0.4;
+      const targetCamZ = playerPosZ - 4.5;
+
+      camera.position.x += (targetCamX - camera.position.x) * (dt / 0.08);
+      camera.position.y += (targetCamY - camera.position.y) * 0.2;
+      camera.position.z = targetCamZ;
+
+      if (cameraShakeTime > 0) {
+        cameraShakeTime -= dt;
+        const shake = Math.sin(cameraShakeTime * 60) * CONFIG.CAMERA_SHAKE_AMPLITUDE;
+        camera.position.x += shake;
+        camera.position.y += (Math.random() - 0.5) * CONFIG.CAMERA_SHAKE_AMPLITUDE;
+      }
+
+      camera.lookAt(playerPosX * 0.4, 1.2 + playerPosY * 0.2, playerPosZ + 6.0);
+
+      const targetFOV = isDashing ? 80 : 65;
+      camera.fov += (targetFOV - camera.fov) * (dt / 0.2);
+      camera.updateProjectionMatrix();
+    }
+
+    function animateMascotLimbs(dt) {
+      if (!playerMeshRef.torsoGroup) return;
+
+      const forwardSpeed = currentForwardSpeed * (isDashing ? CONFIG.DASH_SPEED_MULTIPLIER : 1.0);
+
+      if (gameState === 'RUNNING') {
+        runAnimTime += dt * forwardSpeed * 1.35;
+
+        // Arm swings with natural elbow flex
+        const armCycle = Math.sin(runAnimTime);
+        playerMeshRef.leftArm.rotation.x = armCycle * 0.75;
+        playerMeshRef.rightArm.rotation.x = -armCycle * 0.75;
+        playerMeshRef.leftArm.rotation.z = -0.15;
+        playerMeshRef.rightArm.rotation.z = 0.15;
+
+        playerMeshRef.leftForearm.rotation.x = -0.7 - Math.max(0, armCycle) * 0.4;
+        playerMeshRef.rightForearm.rotation.x = -0.7 - Math.max(0, -armCycle) * 0.4;
+
+        // Leg swings with knee flex
+        const legCycle = Math.sin(runAnimTime);
+        playerMeshRef.leftLeg.rotation.x = -legCycle * 0.85;
+        playerMeshRef.rightLeg.rotation.x = legCycle * 0.85;
+
+        playerMeshRef.leftKnee.rotation.x = Math.max(0, legCycle) * 1.1;
+        playerMeshRef.rightKnee.rotation.x = Math.max(0, -legCycle) * 1.1;
+
+        // Torso Twist & Bob
+        playerMeshRef.pelvisGroup.position.y = 0.82 + Math.abs(Math.sin(runAnimTime * 2)) * 0.08;
+        playerMeshRef.torsoGroup.rotation.y = Math.sin(runAnimTime) * 0.14;
+        playerMeshRef.torsoGroup.rotation.z = -Math.cos(runAnimTime) * 0.04;
+        playerMeshRef.headGroup.position.y = 0.82 + Math.sin(runAnimTime * 2) * 0.02;
+
+        if (isSliding) {
+          playerMeshRef.torsoGroup.rotation.x = 0.95;
+          playerMeshRef.pelvisGroup.position.y = 0.45;
+          playerMeshRef.headGroup.rotation.x = -0.7;
+          playerMeshRef.leftLeg.rotation.x = -1.2;
+          playerMeshRef.leftKnee.rotation.x = 0.2;
+          playerMeshRef.rightLeg.rotation.x = 0.9;
+          playerMeshRef.rightKnee.rotation.x = 1.4;
+          playerMeshRef.leftArm.rotation.x = -0.8;
+          playerMeshRef.rightArm.rotation.x = -0.8;
+        } else {
+          playerMeshRef.torsoGroup.rotation.x = 0.08;
+          playerMeshRef.headGroup.rotation.x = 0;
+        }
+
+        // Cape Wave Cloth simulation
+        if (playerMeshRef.capeGeo) {
+          const pos = playerMeshRef.capeGeo.attributes.position;
+          const time = performance.now() * 0.012;
+          const waveSpeed = isDashing ? 3.2 : forwardSpeed / 10.0;
+          for (let i = 0; i < pos.count; i++) {
+            const y = pos.getY(i);
+            const factor = Math.abs(y);
+            const zWave = Math.sin(time * waveSpeed + y * 6) * (0.08 + (isDashing ? 0.08 : 0.03)) * factor;
+            const xWave = Math.cos(time * 1.5 + y * 4) * 0.04 * factor;
+            pos.setZ(i, (isDashing ? -0.48 * factor : -0.22 * factor) + zWave);
+            pos.setX(i, xWave);
+          }
+          pos.needsUpdate = true;
+          playerMeshRef.capeGeo.computeVertexNormals();
+        }
+      } else if (gameState === 'STUMBLE') {
+        playerMeshRef.torsoGroup.rotation.z = Math.sin(Date.now() * 0.02) * 0.35;
+        playerMeshRef.torsoGroup.rotation.x = -0.2;
+        playerMeshRef.headGroup.rotation.y = Math.sin(Date.now() * 0.015) * 0.3;
+        playerMeshRef.leftArm.rotation.x = -1.2;
+        playerMeshRef.rightArm.rotation.x = -1.2;
+        playerMeshRef.starsGroup.rotation.y += dt * 8.0;
+      }
+
+      // Spin soda cans
+      activeCollectibles.forEach((c) => {
+        if (!c.collected && c.mesh) {
+          c.mesh.rotation.y += dt * 3.14;
+          c.mesh.position.y = c.y + Math.sin(Date.now() * 0.005 + c.z) * 0.1;
+        }
+      });
+    }
+
+    let lastFrameTime = performance.now();
+    let physicsAccumulator = 0.0;
+
+    function mainGameLoop(currentTimestamp) {
+      requestAnimationFrame(mainGameLoop);
+
+      const frameDelta = Math.min((currentTimestamp - lastFrameTime) / 1000, CONFIG.MAX_ACCUMULATOR);
+      lastFrameTime = currentTimestamp;
+
+      physicsAccumulator += frameDelta;
+
+      while (physicsAccumulator >= CONFIG.FIXED_DT) {
+        fixedPhysicsTick(CONFIG.FIXED_DT);
+        physicsAccumulator -= CONFIG.FIXED_DT;
+      }
+
+      animateMascotLimbs(frameDelta);
+      updateParticles(frameDelta);
+      updateCameraRig(frameDelta);
+
+      if (gameState === 'RUNNING' || gameState === 'STUMBLE') {
+        updateHUD();
+      }
+
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+    }
+
+    window.onload = function () {
+      initThreeScene();
+      buildCharacterModel(CHARACTERS[selectedCharId]);
+      initInfiniteTrack();
+      setupInputHandlers();
+
+      // Show high scores in start menu
+      const records = getStoredRecord();
+      document.getElementById('start-high-dist').textContent = `${records.dist.toLocaleString()} M`;
+      document.getElementById('start-high-score').textContent = `${records.score.toLocaleString()} PTS`;
+
+      requestAnimationFrame(mainGameLoop);
+    };
+  </script>
+</body>
+</html>

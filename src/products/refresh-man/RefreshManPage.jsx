@@ -1,3 +1,5 @@
+import './refresh-man.css'
+
 export default function RefreshManPage() {
   return (
     <main className="game-lawas-page">

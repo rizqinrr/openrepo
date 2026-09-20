@@ -3,6 +3,7 @@ import CreatorForm from './CreatorForm.jsx'
 import CreatorPreview from './CreatorPreview.jsx'
 import { useCreatorData } from './useCreatorData.js'
 import { buildFileName } from './creatorSchema.js'
+import './creator.css'
 
 function formatSavedAt(timestamp) {
   if (!timestamp) return ''

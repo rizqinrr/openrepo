@@ -40,7 +40,7 @@ export default function RepositorySubmission() {
   }
 
   return (
-    <section className="repository-submission" aria-labelledby="repository-submission-title">
+    <section id="repository-contribution" className="repository-submission" aria-labelledby="repository-submission-title">
       <div className="repository-submission-intro">
         <span className="repositories-kicker">OPEN CURATION</span>
         <h2 id="repository-submission-title">Punya repo yang benar-benar berguna?</h2>

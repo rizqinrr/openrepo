@@ -110,6 +110,7 @@ export default function HomePage({ theme = 'light', setTheme = () => {}, themeRo
 
   return (
     <main className={`container home-page home-theme-${pageTheme.id}`}>
+      <div className="home-nav-shell">
       <header className="home-nav">
         <a className="home-brand" href="#/" aria-label="OpenRepo beranda"><span className="home-brand-mark">O</span><span>OpenRepo</span></a>
         <nav className="home-nav-links" aria-label="Navigasi utama">
@@ -136,6 +137,7 @@ export default function HomePage({ theme = 'light', setTheme = () => {}, themeRo
           <button className="home-nav-icon" onClick={share} aria-label="Bagikan OpenRepo"><span className="material-symbols-outlined">share</span></button>
         </div>
       </header>
+      </div>
 
       <section className="hero">
         <div className="home-hero-content">

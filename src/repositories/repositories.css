@@ -1,42 +1,42 @@
 .repositories-page {
   width: 100%;
   min-height: 100dvh;
-  padding: 0 0 72px;
+  padding: 76px 0 72px;
   background: #f6f8fc;
   color: #101223;
 }
 
+.repositories-nav-shell {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 80;
+  width: 100%;
+  border-bottom: 1px solid rgba(220, 226, 239, .92);
+  background: rgba(246, 248, 252, .92);
+  box-shadow: 0 8px 24px rgba(16, 18, 35, .06);
+  backdrop-filter: blur(16px);
+}
+
 .repositories-nav {
-  width: min(1180px, calc(100% - 48px));
-  min-height: 76px;
+  width: min(1240px, calc(100% - 80px));
+  height: 72px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 24px;
 }
 
-.repositories-brand,
-.repositories-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: inherit;
-  font-weight: 800;
-  text-decoration: none;
-}
+.repositories-brand { font-size: 21px; letter-spacing: -.03em; }
+.repositories-nav-actions { display: flex; align-items: center; gap: 10px; }
+.repositories-contribute-link, .repositories-back { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 15px; border: 1px solid #e9edfa; border-radius: 15px; background: #fff; color: #000; font-size: 14px; font-weight: 700; text-decoration: none; }
+.repositories-contribute-link:hover, .repositories-contribute-link:focus-visible, .repositories-back:hover, .repositories-back:focus-visible { border-color: #e8001c; color: #e8001c; outline: 3px solid rgba(232,0,28,.15); outline-offset: 2px; }
+.repositories-back { font-weight: 500; }
 
-.repositories-brand span {
-  color: #f47b20;
-  font-size: 22px;
-}
-
-.repositories-back {
-  min-height: 44px;
-  padding: 0 14px;
-  border: 1px solid #dce2ef;
-  border-radius: 14px;
-  background: #fff;
-}
+.repositories-brand { display: inline-flex; align-items: center; gap: 12px; color: #000; font: 700 21px/normal 'PingFang SC', 'Noto Sans SC', sans-serif; letter-spacing: -.03em; text-decoration: none; }
+.repositories-brand-mark { color: #f47b20; font-size: inherit; }
+.repositories-brand span { font-family: 'PingFang SC', 'Noto Sans SC', sans-serif; }
+.repositories-back { min-height: 44px; padding: 0 15px; border: 1px solid #e9edfa; border-radius: 15px; background: #fff; color: #000; font-size: 14px; font-weight: 500; }
 
 .repositories-hero {
   width: min(1180px, calc(100% - 48px));
@@ -138,6 +138,7 @@
   background: #fff;
   box-shadow: 0 8px 24px rgba(37, 99, 235, .08);
 }
+.repository-submission { scroll-margin-top: 96px; }
 
 .repository-submission-intro h2 {
   max-width: 12ch;
@@ -280,7 +281,7 @@
 }
 
 @media (max-width: 640px) {
-  .repositories-nav,
+  .repositories-nav { width: calc(100% - 28px); }
   .repositories-hero,
   .repository-filters,
   .repository-directory,
@@ -293,8 +294,6 @@
   .repository-field-wide { grid-column: auto; }
   .repository-submission-action { flex-direction: column; }
   .repository-contribution-switch { width: 100%; }
-  .repository-contribution-switch button { flex: 1; justify-content: center; padding: 0 10px; }
-  .repository-direct-actions { flex-direction: column; }
   .repository-direct-actions a { justify-content: space-between; }
   .repo-modal { padding: 28px 22px; }
 }

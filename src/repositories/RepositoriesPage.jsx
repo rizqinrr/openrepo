@@ -31,12 +31,22 @@ export default function RepositoriesPage() {
     field?.focus({ preventScroll: true })
   }, [])
 
+  const scrollToContribution = (event) => {
+    event.preventDefault()
+    document.getElementById('repository-contribution')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
   return (
     <main className="repositories-page">
+      <div className="repositories-nav-shell">
       <header className="repositories-nav">
-        <a className="repositories-brand" href="#/" aria-label="Kembali ke OpenRepo"><span>O</span> OpenRepo</a>
-        <a className="repositories-back" href="#/"><span className="material-symbols-outlined">arrow_back</span> Beranda</a>
+        <a className="repositories-brand" href="#/" aria-label="OpenRepo beranda"><span className="repositories-brand-mark">O</span><span>OpenRepo</span></a>
+        <div className="repositories-nav-actions">
+          <a className="repositories-contribute-link" href="#repository-contribution" onClick={scrollToContribution}>Kontribusi</a>
+          <a className="repositories-back" href="#/"><span className="material-symbols-outlined" aria-hidden="true">arrow_back</span><span className="repositories-back-label">Kembali</span></a>
+        </div>
       </header>
+      </div>
 
       <section className="repositories-hero">
         <span className="repositories-kicker">OPEN-SOURCE SHORTLIST</span>

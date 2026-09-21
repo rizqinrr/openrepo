@@ -14,13 +14,13 @@
   --shadow-card: 0 10px 20px rgba(5, 17, 71, .07);
   --shadow-deep: 0 10px 36px rgba(5, 17, 71, .2);
   --home-nav-height: 72px;
-  width: 100%; max-width: none; padding: 0 0 56px; overflow-x: hidden;
+  width: 100%; max-width: none; padding: var(--home-nav-height) 0 56px; overflow-x: hidden;
   background: var(--background); color: var(--on-surface); font-family: 'PingFang SC', 'Noto Sans SC', sans-serif;
 }
 .home-page :where(h1,h2,h3,p,a,button,span,strong) { font-family: 'PingFang SC', 'Noto Sans SC', sans-serif; }
 .home-page .material-symbols-outlined { font-family: 'Material Symbols Outlined'; }
 
-.home-page .home-nav { position: relative; z-index: 20; width: min(1240px, calc(100% - 80px)); height: var(--home-nav-height); margin: 0 auto; display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 24px; }
+.home-nav-shell { position: fixed; inset: 0 0 auto; z-index: 80; width: 100%; background: rgba(255,255,255,.92); border-bottom: 1px solid rgba(233,237,250,.92); box-shadow: 0 8px 24px rgba(5,17,71,.06); backdrop-filter: blur(16px); }.home-page .home-nav { width: min(1240px, calc(100% - 80px)); height: var(--home-nav-height); margin: 0 auto; display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 24px; }
 .home-brand { display: inline-flex; align-items: center; gap: 12px; color: #000; font-size: 21px; font-weight: 700; letter-spacing: -.03em; text-decoration: none; }.home-brand-mark { color: #f47b20; }
 .home-nav-links { display: flex; align-items: center; gap: 28px; margin-left: auto; white-space: nowrap; }
 .home-nav-links a { min-height: 44px; display: inline-flex; align-items: center; color: #000; font-size: 15px; font-weight: 500; text-decoration: none; }

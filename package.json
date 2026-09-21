@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
+    "update:stars": "node scripts/update-repository-stars.mjs",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"

@@ -52,6 +52,49 @@ Metadata minimal:
 4. Gunakan wrapper iframe dari template.
 5. Tambahkan metadata produk ke `src/catalog/products.js`.
 
+## Mengusulkan repository untuk katalog
+
+Repository eksternal masuk melalui kurasi, bukan publikasi otomatis. Dari halaman `#/repos`, isi formulir **Punya repo yang benar-benar berguna?**. Formulir membuka GitHub issue yang sudah berisi URL, kategori, identitas pengusul, alasan, dan checklist lisensi.
+
+Repository yang diusulkan harus:
+
+- Dapat diakses publik dan memiliki lisensi yang jelas.
+- Menyelesaikan masalah nyata, bukan hanya demo atau daftar tautan.
+- Memiliki README yang menjelaskan instalasi dan penggunaan.
+- Tidak mengandung malware, credential, tracking tersembunyi, atau klaim menyesatkan.
+- Aktif dipelihara atau tetap berguna walau pengembangannya stabil.
+
+Maintainer memeriksa manfaat, dokumentasi, keamanan, lisensi, dan kecocokan kategori. Usulan yang lolos ditambahkan sebagai satu object di `src/repositories/repositories.js` dengan struktur berikut:
+
+```js
+{
+  slug: 'nama-repository',
+  name: 'Nama Repository',
+  owner: 'username-github',
+  github: 'https://github.com/username-github/nama-repository',
+  stars: 100,
+  category: 'agent-tools',
+  icon: 'extension',
+  summary: 'Ringkasan singkat yang menjelaskan manfaat nyata.',
+  description: 'Penjelasan lebih lengkap untuk modal detail repository.',
+}
+```
+
+Gunakan ID yang tersedia di `repositoryCategories`. Jangan mengedit homepage atau kartu secara manual; keduanya membaca `repositories.js`.
+
+### Memperbarui jumlah star
+
+Jumlah star disimpan di `src/repositories/repository-stars.js` dan diperbarui otomatis oleh `.github/workflows/update-repository-stars.yml` setiap tiga hari. Workflow membaca `stargazers_count` dari GitHub REST API, menjalankan lint dan build, lalu hanya membuat commit bila angkanya berubah.
+
+Untuk menjalankannya manual:
+
+```bash
+npm run update:stars
+```
+
+Jangan mengedit `repository-stars.js` secara manual.
+
+
 ## Atribusi
 
 Setiap produk wajib menyertakan identitas pembuat:

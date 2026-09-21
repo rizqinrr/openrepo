@@ -10,6 +10,7 @@ export const routes = {
   '#/cv': CvPage,
   '#/portfolio': PortfolioPage,
   '#/repos': RepositoriesPage,
+  '#/repos?contribute=1': RepositoriesPage,
   ...productRoutes,
 }
 

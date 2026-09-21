@@ -1,0 +1,145 @@
+.repo-card {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  min-height: 188px;
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--outline-variant));
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--on-surface);
+  box-shadow: 0 8px 24px rgba(5, 17, 71, .08);
+  text-align: left;
+  cursor: pointer;
+  transition: transform .24s ease, border-color .24s ease, box-shadow .24s ease;
+}
+
+.repo-card:hover,
+.repo-card:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 16px 32px rgba(5, 17, 71, .14);
+  transform: translateY(-5px) scale(1.035);
+  outline: none;
+}
+
+.repo-card-icon,
+.repo-modal-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.repo-card-body {
+  width: 100%;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.repo-card-category {
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.repo-card-body strong { font-size: 19px; letter-spacing: -.025em; }
+
+.repo-card-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--on-surface-variant);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.repo-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: auto;
+  color: var(--on-surface-variant);
+  font-size: 12px;
+}
+
+.repo-card-meta span:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--on-surface-variant);
+}
+
+.repo-card-meta .repo-card-star { color: #f59e0b; font-size: 14px; line-height: 1; }
+
+.repo-card-arrow {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  color: var(--secondary);
+}
+
+.repo-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(10, 15, 30, .72);
+  backdrop-filter: blur(6px);
+}
+
+.repo-modal {
+  position: relative;
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 32px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 22px;
+  background: var(--surface);
+  color: var(--on-surface);
+  box-shadow: var(--shadow-dock);
+}
+
+.repo-modal h2 { font-size: clamp(28px, 5vw, 42px); }
+.repo-modal p { color: var(--on-surface-variant); line-height: 1.65; }
+.repo-modal-owner { font-size: 13px; }
+
+.repo-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--outline-variant);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--on-surface);
+  cursor: pointer;
+}
+
+.repo-modal-close:hover,
+.repo-modal-close:focus-visible {
+  color: var(--primary);
+  border-color: var(--primary);
+  outline: 2px solid var(--primary-soft);
+}

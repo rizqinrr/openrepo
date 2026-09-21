@@ -77,7 +77,15 @@ openrepo/
 
 ## Berkontribusi
 
-Panduan lengkap tersedia di [CONTRIBUTING.md](CONTRIBUTING.md).
+### Mengusulkan repository
+
+Buka katalog di [#/repos](#/repos), lalu gunakan formulir **Punya repo yang benar-benar berguna?**. Isi URL GitHub, kategori, identitas pengusul, alasan manfaat, dan konfirmasi lisensi. Formulir menyiapkan GitHub issue; repository baru masuk katalog setelah maintainer memeriksa manfaat, dokumentasi, keamanan, dan lisensinya.
+
+Jumlah star repository diperbarui otomatis dari GitHub setiap tiga hari dan disimpan sebagai data build, sehingga halaman tetap cepat serta tidak menghabiskan rate limit pengunjung.
+
+Panduan lengkap tersedia di [CONTRIBUTING.md](CONTRIBUTING.md), termasuk kriteria kurasi dan struktur data repository.
+
+### Menambahkan produk
 
 Ringkasnya:
 

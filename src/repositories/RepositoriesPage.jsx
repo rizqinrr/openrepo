@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import RepositoryCard from './RepositoryCard.jsx'
+import RepositorySubmission from './RepositorySubmission.jsx'
 import { formatStars, repositories, repositoryCategories, repositoryCategory } from './repositories.js'
 import './repositories.css'
 
@@ -22,6 +23,13 @@ export default function RepositoriesPage() {
       window.removeEventListener('keydown', onKey)
     }
   }, [selectedRepository])
+
+  useEffect(() => {
+    if (window.location.hash !== '#/repos?contribute=1') return
+    const field = document.getElementById('repository-github-url')
+    field?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' })
+    field?.focus({ preventScroll: true })
+  }, [])
 
   return (
     <main className="repositories-page">
@@ -46,6 +54,8 @@ export default function RepositoriesPage() {
       <section className="repository-directory" aria-label="Daftar repository">
         {visibleRepositories.map((repository) => <RepositoryCard key={repository.slug} repository={repository} onOpen={setSelectedRepository} />)}
       </section>
+
+      <RepositorySubmission />
 
       {selectedRepository && (
         <div className="repo-modal-backdrop" onClick={() => setSelectedRepository(null)}>

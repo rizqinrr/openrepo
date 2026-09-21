@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react'
-import { FaDiscord } from 'react-icons/fa'
+import { useEffect, useRef, useState } from 'react'
 import { catalogCategories } from '../../catalog/registry.js'
 import RepositoryCard from '../../repositories/RepositoryCard.jsx'
 import { formatStars, repositories } from '../../repositories/repositories.js'
@@ -10,6 +9,9 @@ export default function HomePage({ theme = 'light', setTheme = () => {}, themeRo
   const [toast, setToast] = useState('')
   const [showTemplates, setShowTemplates] = useState(false)
   const [selectedRepository, setSelectedRepository] = useState(null)
+  const marqueeRef = useRef(null)
+  const marqueeHoverRef = useRef(false)
+  const marqueeSyncRef = useRef(false)
   const pageTheme = themeForRoute(themeRoute)
 
   useEffect(() => {
@@ -39,6 +41,33 @@ export default function HomePage({ theme = 'light', setTheme = () => {}, themeRo
       window.removeEventListener('keydown', onKey)
     }
   }, [selectedRepository])
+  const normalizeMarquee = () => {
+    const rail = marqueeRef.current
+    if (!rail || marqueeSyncRef.current) return
+    const midpoint = rail.scrollWidth / 2
+    if (!midpoint) return
+    marqueeSyncRef.current = true
+    if (rail.scrollLeft >= midpoint) rail.scrollLeft -= midpoint
+    else if (rail.scrollLeft <= 1) rail.scrollLeft += midpoint
+    marqueeSyncRef.current = false
+  }
+  const onMarqueePointerDown = () => { marqueeHoverRef.current = true }
+  const onMarqueePointerUp = () => { marqueeHoverRef.current = false }
+  useEffect(() => {
+    const rail = marqueeRef.current
+    if (!rail || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
+    let frameId
+    let lastTime = performance.now()
+    const tick = (time) => {
+      const elapsed = time - lastTime
+      lastTime = time
+      rail.scrollLeft += elapsed * (marqueeHoverRef.current ? 0.025 : 0.06)
+      normalizeMarquee()
+      frameId = window.requestAnimationFrame(tick)
+    }
+    frameId = window.requestAnimationFrame(tick)
+    return () => window.cancelAnimationFrame(frameId)
+  }, [])
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark'
@@ -157,26 +186,39 @@ export default function HomePage({ theme = 'light', setTheme = () => {}, themeRo
           <div><span className="home-eyebrow">CURATED OPEN SOURCE</span><h2 id="home-repositories-title">Repo yang layak disimpan.</h2></div>
           <a className="home-repositories-more" href="#/repos">Lihat selengkapnya <span className="material-symbols-outlined" aria-hidden="true">arrow_forward</span></a>
         </div>
-        <div className="home-repository-rail" aria-label="Repository pilihan" tabIndex="0">
-          {repositories.map((repository) => <RepositoryCard key={repository.slug} repository={repository} compact onOpen={openRepository} />)}
+        <div
+          ref={marqueeRef}
+          className="home-repository-marquee"
+          aria-label="Repository pilihan"
+          onMouseEnter={() => { marqueeHoverRef.current = true }}
+          onMouseLeave={() => { marqueeHoverRef.current = false }}
+          onPointerDown={onMarqueePointerDown}
+          onPointerUp={onMarqueePointerUp}
+          onPointerCancel={onMarqueePointerUp}
+          onScroll={normalizeMarquee}
+        >
+          <div className="home-repository-track">
+            {repositories.map((repository) => <RepositoryCard key={repository.slug} repository={repository} compact onOpen={openRepository} />)}
+            {repositories.map((repository) => <RepositoryCard key={`${repository.slug}-clone`} repository={repository} compact clone onOpen={openRepository} />)}
+          </div>
         </div>
       </section>
 
       <section id="contribute" className="home-contribute" aria-labelledby="contribute-title">
         <div className="home-contribute-copy">
           <span className="home-eyebrow">BUILT IN THE OPEN</span>
-          <h2 id="contribute-title">Bikin sesuatu yang berguna? Mari bangun bareng.</h2>
-          <p>OpenRepo tumbuh dari kontribusi kecil: satu tool, satu perbaikan, satu ide yang membuat browser lebih berguna untuk orang lain.</p>
+          <h2 id="contribute-title">Punya repo yang berguna? Bawa masuk ke OpenRepo.</h2>
+          <p>Usulkan repository publik yang sudah siap dipakai. Kami cek manfaat, dokumentasi, keamanan, dan lisensinya sebelum ditampilkan bersama pilihan lain.</p>
           <div className="home-contribute-actions">
-            <a className="home-contribute-primary" href="https://github.com/rizqinrr/openrepo" target="_blank" rel="noopener noreferrer">Lihat repository <span className="material-symbols-outlined">open_in_new</span></a>
-            <a className="home-contribute-secondary" href="https://discord.gg/qBVgV4DtD" target="_blank" rel="noopener noreferrer"><FaDiscord aria-hidden="true" /> Gabung Discord</a>
+            <a className="home-contribute-primary" href="#/repos?contribute=1">Usulkan repository <span className="material-symbols-outlined" aria-hidden="true">arrow_forward</span></a>
+            <a className="home-contribute-secondary" href="https://github.com/rizqinrr/openrepo" target="_blank" rel="noopener noreferrer">Lihat source <span className="material-symbols-outlined" aria-hidden="true">open_in_new</span></a>
           </div>
-          <p className="home-contribute-note">Belum siap coding? Ceritakan ide atau bantu menguji produk yang sudah ada.</p>
+          <p className="home-contribute-note">Usulan membuka issue GitHub yang sudah terisi. Repository tidak masuk otomatis sebelum lolos kurasi.</p>
         </div>
         <div className="home-contribute-paths" aria-label="Langkah berkontribusi">
-          <div className="home-contribute-path"><span className="home-contribute-step">01</span><span className="material-symbols-outlined">forum</span><div><strong>Masuk dan ngobrol</strong><span>Kenalan, pilih ide, atau ceritakan masalahmu di Discord.</span></div></div>
-          <div className="home-contribute-path"><span className="home-contribute-step">02</span><span className="material-symbols-outlined">lightbulb</span><div><strong>Usulkan atau buat</strong><span>Buka issue, kirim prototype, atau tambah produk baru.</span></div></div>
-          <div className="home-contribute-path"><span className="home-contribute-step">03</span><span className="material-symbols-outlined">rocket_launch</span><div><strong>Bagikan ke dunia</strong><span>Setiap produk mencantumkan pembuat dan link GitHub-nya.</span></div></div>
+          <div className="home-contribute-path"><span className="home-contribute-step">01</span><span className="material-symbols-outlined">search</span><div><strong>Pilih yang layak</strong><span>Repository publik, berguna, terdokumentasi, dan punya lisensi jelas.</span></div></div>
+          <div className="home-contribute-path"><span className="home-contribute-step">02</span><span className="material-symbols-outlined">edit_note</span><div><strong>Kirim usulan</strong><span>Isi URL, kategori, dan alasan nyata kenapa repo ini pantas disimpan.</span></div></div>
+          <div className="home-contribute-path"><span className="home-contribute-step">03</span><span className="material-symbols-outlined">fact_check</span><div><strong>Lolos kurasi</strong><span>Maintainer memeriksa kualitas, keamanan, lisensi, lalu menambahkannya ke katalog.</span></div></div>
         </div>
       </section>
 

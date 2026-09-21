@@ -9,6 +9,6 @@ export const COMMUNITY = {
     { id: 'wa-group', label: 'Grup Ngomongin AI', icon: FaWhatsapp, action: 'open', href: WHATSAPP_GROUP },
     { id: 'wa-channel', label: 'Channel Ngomongin AI', icon: FaWhatsapp, action: 'open', href: 'https://whatsapp.com/channel/0029Vb72vF04dTnAinqyoO3e' },
     { id: 'telegram', label: 'Grup Telegram Ngomongin AI', icon: FaTelegram, action: 'gate', title: 'Grup Telegram Ngomongin AI', message: 'Link grup Telegram belum tersedia.' },
-    { id: 'discord', label: 'Discord Ngomongin AI', icon: FaDiscord, action: 'gate', title: 'Discord Ngomongin AI', message: 'Link invite Discord sudah kadaluarsa.' },
+    { id: 'discord', label: 'Discord OpenRepo', icon: FaDiscord, action: 'open', href: 'https://discord.gg/qBVgV4DtD' },
   ],
 }

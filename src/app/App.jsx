@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ACCENT, THEME_KEY } from '../shared/config/theme.js'
 import HomePage from '../pages/home/HomePage.jsx'
+import { HOME_THEMES } from '../pages/home/themes.js'
 import { renderRoute } from './routes.jsx'
 import { useHashRoute } from './useHashRoute.js'
 
@@ -15,5 +16,7 @@ export default function App() {
     localStorage.setItem(THEME_KEY, theme)
   }, [theme])
 
-  return routedPage ?? <HomePage theme={theme} setTheme={setTheme} />
+  if (routedPage) return routedPage
+  const themeRoute = HOME_THEMES[route] ? route : '#/'
+  return <HomePage theme={theme} setTheme={setTheme} themeRoute={themeRoute} />
 }

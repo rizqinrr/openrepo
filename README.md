@@ -1,6 +1,6 @@
 # OpenRepo
 
-OpenRepo adalah katalog open-source berisi tools kecil, game browser, dan eksperimen interaktif yang dapat digunakan langsung tanpa instalasi atau akun.
+OpenRepo adalah katalog open-source berisi tools browser, game, eksperimen interaktif, dan repository GitHub pilihan yang dapat digunakan atau dipelajari tanpa akun.
 
 **Live:** https://rizqinrr.github.io/openrepo/
 
@@ -11,6 +11,7 @@ OpenRepo adalah katalog open-source berisi tools kecil, game browser, dan eksper
 - **Refresh Man: Urban Rush** — endless arcade game karya [@Dermawanpurba](https://github.com/Dermawanpurba).
 - **Profile experiments** — beberapa eksperimen visual seperti Arcade, Terminal, Swiss Editorial, dan Airbnb Experience.
 - **Community links** — akses ke kanal komunitas yang dikurasi.
+- **Curated repositories** — katalog repository berguna dengan filter kategori, detail, dan alur kontribusi melalui issue atau pull request.
 
 Setiap produk memiliki identitas pembuat melalui metadata `author` dan `github` pada katalog.
 
@@ -21,6 +22,7 @@ Setiap produk memiliki identitas pembuat melalui metadata `author` dan `github` 
 - Framer Motion
 - React Icons
 - GitHub Pages
+- GitHub Actions
 
 Sebagian produk mandiri dapat membawa implementasinya sendiri. Contohnya, Refresh Man disimpan di `public/products/refresh-man/` dan dibuka melalui wrapper React.
 
@@ -42,6 +44,7 @@ Buka alamat yang ditampilkan Vite, biasanya `http://localhost:5173`.
 | `npm run dev` | Menjalankan development server |
 | `npm run build` | Membuat production build di `dist/` |
 | `npm run lint` | Menjalankan Oxlint |
+| `npm run update:stars` | Mengambil jumlah star repository terbaru dari GitHub |
 | `npm run preview` | Meninjau production build secara lokal |
 | `npm run deploy` | Membangun dan memublikasikan `dist/` ke branch `gh-pages` |
 
@@ -49,26 +52,20 @@ Buka alamat yang ditampilkan Vite, biasanya `http://localhost:5173`.
 
 ```text
 openrepo/
-├─ public/
-│  └─ products/
-│     └─ refresh-man/index.html
+├─ .github/workflows/           # Otomasi pembaruan star repository
+├─ public/products/             # Produk HTML mandiri
+├─ scripts/                     # Script pemeliharaan data
 ├─ src/
-│  ├─ app/                     # Route lookup dan hash route hook
-│  ├─ catalog/                 # Category/product registry tervalidasi
+│  ├─ app/                      # Route lookup dan hash route hook
+│  ├─ catalog/                  # Category/product registry tervalidasi
+│  ├─ repositories/             # Katalog repo, kartu, form, dan cache star
 │  ├─ pages/
-│  │  ├─ home/                 # Homepage dan style terisolasi
-│  │  └─ legacy/               # Halaman CV/portfolio lama
-│  ├─ products/
-│  │  ├─ typing-survival/
-│  │  ├─ refresh-man/
-│  │  ├─ cv-creator/
-│  │  ├─ _template-react/
-│  │  └─ _template-html/
-│  ├─ experiments/profile-templates/
+│  │  ├─ home/                  # Homepage dan style terisolasi
+│  │  └─ legacy/                # Halaman CV/portfolio lama
+│  ├─ products/                 # Produk React dan wrapper HTML
+│  ├─ experiments/              # Eksperimen tampilan profil
 │  ├─ community/
-│  └─ shared/
-│     ├─ config/
-│     └─ styles/
+│  └─ shared/                   # Konfigurasi dan style bersama
 ├─ CONTRIBUTING.md
 ├─ LICENSE
 ├─ package.json
@@ -79,11 +76,14 @@ openrepo/
 
 ### Mengusulkan repository
 
-Buka katalog di [#/repos](#/repos), lalu gunakan formulir **Punya repo yang benar-benar berguna?**. Isi URL GitHub, kategori, identitas pengusul, alasan manfaat, dan konfirmasi lisensi. Formulir menyiapkan GitHub issue; repository baru masuk katalog setelah maintainer memeriksa manfaat, dokumentasi, keamanan, dan lisensinya.
+Buka [katalog repository](https://rizqinrr.github.io/openrepo/#/repos?contribute=1), lalu pilih salah satu jalur:
 
-Jumlah star repository diperbarui otomatis dari GitHub setiap tiga hari dan disimpan sebagai data build, sehingga halaman tetap cepat serta tidak menghabiskan rate limit pengunjung.
+- **Usulkan repo** — isi formulir untuk membuat GitHub issue yang sudah memuat URL, kategori, identitas pengusul, alasan manfaat, dan konfirmasi lisensi.
+- **Kontribusi langsung** — fork OpenRepo, tambahkan metadata ke `src/repositories/repositories.js`, jalankan pemeriksaan, lalu kirim pull request.
 
-Panduan lengkap tersedia di [CONTRIBUTING.md](CONTRIBUTING.md), termasuk kriteria kurasi dan struktur data repository.
+Repository tidak langsung terbit. Maintainer tetap memeriksa manfaat, dokumentasi, keamanan, lisensi, dan kecocokan kategori. Jumlah star diperbarui otomatis dari GitHub setiap tiga hari dan disimpan sebagai data build agar halaman tidak memakai rate limit pengunjung.
+
+Panduan dan kriteria lengkap tersedia di [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Menambahkan produk
 
@@ -139,6 +139,7 @@ Kontribusi juga harus:
 Project menggunakan hash routing sederhana tanpa React Router.
 
 ```text
+#/repos         → Katalog repository pilihan
 #/typing-game   → Typing Survival
 #/game-lawas    → Refresh Man: Urban Rush
 #/creator       → CV Creator

@@ -737,3 +737,58 @@
 .dt-check-item.is-ok {
   color: #16a34a;
 }
+
+.dt-diff-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.dt-diff-view {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  border-radius: 14px;
+  border: 1px solid var(--glass-border);
+  background: var(--background);
+  overflow: hidden;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.dt-diff-line {
+  display: flex;
+  align-items: stretch;
+  padding: 0 12px;
+}
+
+.dt-diff-line.is-added {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.dt-diff-line.is-removed {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.dt-diff-sign {
+  flex: 0 0 18px;
+  user-select: none;
+  color: var(--on-surface-variant);
+}
+
+.dt-diff-line.is-added .dt-diff-sign {
+  color: #16a34a;
+}
+
+.dt-diff-line.is-removed .dt-diff-sign {
+  color: #dc2626;
+}
+
+.dt-diff-text {
+  margin: 0;
+  padding: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: var(--on-surface);
+}

@@ -4,6 +4,7 @@ import EpochTool from './EpochTool.jsx'
 import EncoderTool from './EncoderTool.jsx'
 import CaseTool from './CaseTool.jsx'
 import PasswordTool from './PasswordTool.jsx'
+import DiffTool from './DiffTool.jsx'
 
 export const DEV_TOOL_TABS = [
   {
@@ -53,6 +54,14 @@ export const DEV_TOOL_TABS = [
     title: 'Password Generator & Checker',
     description: 'Buat password kuat secara acak dan periksa kekuatannya.',
     Component: PasswordTool,
+  },
+  {
+    id: 'diff',
+    label: 'Diff',
+    icon: 'difference',
+    title: 'Text Diff',
+    description: 'Bandingkan dua teks dan lihat baris yang berubah.',
+    Component: DiffTool,
   },
 ]
 

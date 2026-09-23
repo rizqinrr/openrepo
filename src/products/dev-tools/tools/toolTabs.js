@@ -1,4 +1,5 @@
 import JsonTool from './JsonTool.jsx'
+import RegexTool from './RegexTool.jsx'
 
 export const DEV_TOOL_TABS = [
   {
@@ -8,6 +9,14 @@ export const DEV_TOOL_TABS = [
     title: 'JSON Formatter & Validator',
     description: 'Format, minify, dan validasi teks JSON langsung di browser.',
     Component: JsonTool,
+  },
+  {
+    id: 'regex',
+    label: 'Regex',
+    icon: 'manage_search',
+    title: 'Regex Tester',
+    description: 'Uji pola regex dan lihat setiap match beserta group capture.',
+    Component: RegexTool,
   },
 ]
 

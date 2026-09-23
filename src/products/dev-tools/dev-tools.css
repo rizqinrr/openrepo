@@ -1,0 +1,272 @@
+/* ─── Dev Tools (halaman #/dev-tools) ─────────────────── */
+
+.dt-page {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+.dt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.dt-toolbar-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--on-surface);
+}
+
+.dt-toolbar-title .material-symbols-outlined {
+  font-size: 24px;
+  color: var(--primary);
+}
+
+.dt-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  color: var(--on-surface);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow-soft);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.dt-back:hover {
+  background: var(--primary-soft);
+  color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.dt-back:active {
+  transform: scale(0.94);
+}
+
+.dt-back .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.dt-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  margin: 0 -14px 20px;
+  overflow-x: auto;
+  border-radius: 16px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
+  scrollbar-width: none;
+}
+
+.dt-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.dt-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 15px;
+  border-radius: 11px;
+  border: 1px solid transparent;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.dt-tab:hover {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.dt-tab.is-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.dt-tab .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.dt-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dt-panel-head {
+  padding: 0 4px;
+}
+
+.dt-panel-head h1 {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--on-surface);
+}
+
+.dt-panel-head p {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--on-surface-variant);
+}
+
+.dt-tool {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
+}
+
+.dt-textarea-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dt-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+
+.dt-textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--outline-variant);
+  background: var(--background);
+  color: var(--on-surface);
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.dt-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.dt-textarea-code {
+  min-height: 90px;
+}
+
+.dt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 11px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+}
+
+.dt-btn:hover:not(:disabled) {
+  background: var(--primary-deep);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-dock);
+}
+
+.dt-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.dt-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.dt-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.dt-btn-ghost {
+  background: transparent;
+  color: var(--on-surface);
+  border: 1px solid var(--outline-variant);
+  box-shadow: none;
+}
+
+.dt-btn-ghost:hover:not(:disabled) {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-color: var(--primary);
+  box-shadow: none;
+}
+
+.dt-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.dt-status .material-symbols-outlined {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.dt-status.is-ok {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+}
+
+.dt-status.is-error {
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+}

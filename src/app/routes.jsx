@@ -16,6 +16,6 @@ export const routes = {
 
 export function renderRoute(route) {
   if (experimentRoutes.has(route)) return null
-  const Page = routes[route]
+  const Page = routes[route] ?? routes[route.split('/').slice(0, 2).join('/')]
   return Page ? <Page /> : null
 }

@@ -1,0 +1,33 @@
+- main [ref=f1e3]:
+  - generic [ref=f1e4]:
+    - link "arrow_back Kembali ke OpenRepo" [ref=f1e5] [cursor=pointer]:
+      - /url: "#/"
+      - generic [ref=f1e6]: arrow_back
+      - generic [ref=f1e7]: Kembali ke OpenRepo
+    - generic [ref=f1e8]:
+      - generic [ref=f1e9]: code
+      - generic [ref=f1e10]: Dev Tools
+  - navigation "Pilih tool" [ref=f1e11]:
+    - link "data_object JSON" [ref=f1e12] [cursor=pointer]:
+      - /url: "#/dev-tools/json"
+      - generic [ref=f1e13]: data_object
+      - generic [ref=f1e14]: JSON
+  - region "JSON tool" [ref=f1e15]:
+    - generic [ref=f1e17]:
+      - heading "JSON Formatter & Validator" [level=1] [ref=f1e18]
+      - paragraph [ref=f1e19]: Format, minify, dan validasi teks JSON langsung di browser.
+    - generic [ref=f1e20]:
+      - generic [ref=f1e21]:
+        - generic [ref=f1e22]: Input JSON
+        - textbox "Input JSON" [ref=f1e23]:
+          - /placeholder: "{\"nama\":\"Contoh\",\"angka\":42,\"aktif\":true}"
+      - generic [ref=f1e24]:
+        - button "format_align_left Format" [disabled] [ref=f1e25]:
+          - generic [ref=f1e26]: format_align_left
+          - text: Format
+        - button "compress Minify" [disabled] [ref=f1e27]:
+          - generic [ref=f1e28]: compress
+          - text: Minify
+        - button "content_copy Salin" [disabled] [ref=f1e29]:
+          - generic [ref=f1e30]: content_copy
+          - text: Salin

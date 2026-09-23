@@ -1,6 +1,7 @@
 import JsonTool from './JsonTool.jsx'
 import RegexTool from './RegexTool.jsx'
 import EpochTool from './EpochTool.jsx'
+import EncoderTool from './EncoderTool.jsx'
 
 export const DEV_TOOL_TABS = [
   {
@@ -26,6 +27,14 @@ export const DEV_TOOL_TABS = [
     title: 'Epoch & Timestamp Converter',
     description: 'Konversi antara Unix timestamp (detik/milidetik) dan tanggal.',
     Component: EpochTool,
+  },
+  {
+    id: 'encoder',
+    label: 'Encode',
+    icon: 'swap_horiz',
+    title: 'Base64 & URL Encoder-Decoder',
+    description: 'Encode dan decode Base64 serta URL encoding langsung di browser.',
+    Component: EncoderTool,
   },
 ]
 

@@ -7,6 +7,7 @@ OpenRepo adalah katalog open-source berisi tools browser, game, eksperimen inter
 ## Produk yang tersedia
 
 - **CV Creator** — membuat dan mengekspor CV langsung dari browser.
+- **Dev Tools** — rangkaian tool developer: JSON, Regex, Timestamp, Encode, Case, Password, Diff, dan Color Palette.
 - **Typing Survival** — game mengetik dengan wave, nyawa, combo, dan best score lokal.
 - **Refresh Man: Urban Rush** — endless arcade game karya [@Dermawanpurba](https://github.com/Dermawanpurba).
 - **Profile experiments** — beberapa eksperimen visual seperti Arcade, Terminal, Swiss Editorial, dan Airbnb Experience.
@@ -144,6 +145,7 @@ Project menggunakan hash routing sederhana tanpa React Router.
 #/game-lawas    → Refresh Man: Urban Rush
 #/creator       → CV Creator
 #/komunitas     → Community
+#/dev-tools     → Dev Tools (sub-hash per tool, mis. #/dev-tools/json)
 ```
 
 Route lain digunakan untuk eksperimen tampilan profil.

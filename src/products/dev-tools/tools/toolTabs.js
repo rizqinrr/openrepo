@@ -1,5 +1,6 @@
 import JsonTool from './JsonTool.jsx'
 import RegexTool from './RegexTool.jsx'
+import EpochTool from './EpochTool.jsx'
 
 export const DEV_TOOL_TABS = [
   {
@@ -17,6 +18,14 @@ export const DEV_TOOL_TABS = [
     title: 'Regex Tester',
     description: 'Uji pola regex dan lihat setiap match beserta group capture.',
     Component: RegexTool,
+  },
+  {
+    id: 'epoch',
+    label: 'Timestamp',
+    icon: 'schedule',
+    title: 'Epoch & Timestamp Converter',
+    description: 'Konversi antara Unix timestamp (detik/milidetik) dan tanggal.',
+    Component: EpochTool,
   },
 ]
 

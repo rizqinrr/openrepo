@@ -557,3 +557,9 @@
 .dt-btn-mini .material-symbols-outlined {
   font-size: 15px;
 }
+
+.dt-divider {
+  height: 1px;
+  background: var(--outline-variant);
+  margin: 4px 0;
+}

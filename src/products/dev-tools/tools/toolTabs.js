@@ -2,6 +2,7 @@ import JsonTool from './JsonTool.jsx'
 import RegexTool from './RegexTool.jsx'
 import EpochTool from './EpochTool.jsx'
 import EncoderTool from './EncoderTool.jsx'
+import CaseTool from './CaseTool.jsx'
 
 export const DEV_TOOL_TABS = [
   {
@@ -35,6 +36,14 @@ export const DEV_TOOL_TABS = [
     title: 'Base64 & URL Encoder-Decoder',
     description: 'Encode dan decode Base64 serta URL encoding langsung di browser.',
     Component: EncoderTool,
+  },
+  {
+    id: 'case',
+    label: 'Case',
+    icon: 'text_fields',
+    title: 'Case Converter',
+    description: 'Ubah teks ke camelCase, snake_case, kebab-case, dan lainnya.',
+    Component: CaseTool,
   },
 ]
 

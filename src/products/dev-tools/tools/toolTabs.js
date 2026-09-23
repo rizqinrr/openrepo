@@ -3,6 +3,7 @@ import RegexTool from './RegexTool.jsx'
 import EpochTool from './EpochTool.jsx'
 import EncoderTool from './EncoderTool.jsx'
 import CaseTool from './CaseTool.jsx'
+import PasswordTool from './PasswordTool.jsx'
 
 export const DEV_TOOL_TABS = [
   {
@@ -44,6 +45,14 @@ export const DEV_TOOL_TABS = [
     title: 'Case Converter',
     description: 'Ubah teks ke camelCase, snake_case, kebab-case, dan lainnya.',
     Component: CaseTool,
+  },
+  {
+    id: 'password',
+    label: 'Password',
+    icon: 'password',
+    title: 'Password Generator & Checker',
+    description: 'Buat password kuat secara acak dan periksa kekuatannya.',
+    Component: PasswordTool,
   },
 ]
 

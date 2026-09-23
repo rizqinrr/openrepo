@@ -5,6 +5,7 @@ import EncoderTool from './EncoderTool.jsx'
 import CaseTool from './CaseTool.jsx'
 import PasswordTool from './PasswordTool.jsx'
 import DiffTool from './DiffTool.jsx'
+import PaletteTool from './PaletteTool.jsx'
 
 export const DEV_TOOL_TABS = [
   {
@@ -62,6 +63,14 @@ export const DEV_TOOL_TABS = [
     title: 'Text Diff',
     description: 'Bandingkan dua teks dan lihat baris yang berubah.',
     Component: DiffTool,
+  },
+  {
+    id: 'palette',
+    label: 'Color',
+    icon: 'palette',
+    title: 'Color Palette Generator',
+    description: 'Bangun palet warna seimbang dan ekspor sebagai CSS variables.',
+    Component: PaletteTool,
   },
 ]
 

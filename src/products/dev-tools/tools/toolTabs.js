@@ -7,6 +7,7 @@ import PasswordTool from './PasswordTool.jsx'
 import DiffTool from './DiffTool.jsx'
 import PaletteTool from './PaletteTool.jsx'
 import QrTool from './QrTool.jsx'
+import GradientTool from './GradientTool.jsx'
 
 export const DEV_TOOL_TABS = [
   {
@@ -80,6 +81,14 @@ export const DEV_TOOL_TABS = [
     title: 'QR Code Generator',
     description: 'Buat kode QR dari teks atau URL dan simpan sebagai PNG.',
     Component: QrTool,
+  },
+  {
+    id: 'gradient',
+    label: 'Gradient',
+    icon: 'gradient',
+    title: 'Gradient Generator',
+    description: 'Bangun gradient linear atau radial dan salin CSS-nya.',
+    Component: GradientTool,
   },
 ]
 

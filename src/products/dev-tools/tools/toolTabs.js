@@ -6,6 +6,7 @@ import CaseTool from './CaseTool.jsx'
 import PasswordTool from './PasswordTool.jsx'
 import DiffTool from './DiffTool.jsx'
 import PaletteTool from './PaletteTool.jsx'
+import QrTool from './QrTool.jsx'
 
 export const DEV_TOOL_TABS = [
   {
@@ -71,6 +72,14 @@ export const DEV_TOOL_TABS = [
     title: 'Color Palette Generator',
     description: 'Bangun palet warna seimbang dan ekspor sebagai CSS variables.',
     Component: PaletteTool,
+  },
+  {
+    id: 'qr',
+    label: 'QR Code',
+    icon: 'qr_code_2',
+    title: 'QR Code Generator',
+    description: 'Buat kode QR dari teks atau URL dan simpan sebagai PNG.',
+    Component: QrTool,
   },
 ]
 

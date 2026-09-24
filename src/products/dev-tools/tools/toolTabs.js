@@ -8,6 +8,7 @@ import DiffTool from './DiffTool.jsx'
 import PaletteTool from './PaletteTool.jsx'
 import QrTool from './QrTool.jsx'
 import GradientTool from './GradientTool.jsx'
+import LayoutTool from './LayoutTool.jsx'
 
 export const DEV_TOOL_TABS = [
   {
@@ -89,6 +90,14 @@ export const DEV_TOOL_TABS = [
     title: 'Gradient Generator',
     description: 'Bangun gradient linear atau radial dan salin CSS-nya.',
     Component: GradientTool,
+  },
+  {
+    id: 'layout',
+    label: 'Layout',
+    icon: 'grid_view',
+    title: 'Grid & Flexbox Layout Generator',
+    description: 'Kontrol posisi elemen dengan grid atau flexbox, salin CSS, Tailwind, atau prompt.',
+    Component: LayoutTool,
   },
 ]
 

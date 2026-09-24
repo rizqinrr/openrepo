@@ -991,3 +991,40 @@
   max-height: 160px;
   overflow-y: auto;
 }
+
+.dt-layout-preview {
+  min-height: 220px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px dashed var(--outline);
+  background:
+    linear-gradient(var(--background), var(--background)) padding-box,
+    repeating-conic-gradient(
+        var(--outline-variant) 0% 25%,
+        transparent 0% 50%
+      )
+      50% / 20px 20px;
+  overflow: auto;
+}
+
+.dt-layout-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.dt-layout-item b {
+  font-size: 14px;
+  font-weight: 800;
+}

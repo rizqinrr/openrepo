@@ -1028,3 +1028,130 @@
   font-size: 14px;
   font-weight: 800;
 }
+
+.dt-kv-col {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.dt-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  white-space: nowrap;
+}
+
+.dt-status-chip .material-symbols-outlined {
+  font-size: 13px;
+}
+
+.dt-status-chip.is-free {
+  background: rgba(34, 197, 94, 0.14);
+  color: #2fd573;
+}
+
+.dt-status-chip.is-taken {
+  background: rgba(220, 38, 38, 0.14);
+  color: #f27373;
+}
+
+.dt-status-chip.is-error {
+  background: rgba(250, 204, 21, 0.14);
+  color: #fbbf24;
+}
+
+.dt-status-chip.is-dim {
+  background: var(--surface);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+}
+
+.dt-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.dt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 480px;
+}
+
+.dt-table th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  border-bottom: 1px solid var(--glass-border);
+  background: var(--background);
+  white-space: nowrap;
+}
+
+.dt-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--outline-variant);
+  color: var(--on-surface);
+  vertical-align: middle;
+}
+
+.dt-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dt-cell-name {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-weight: 700;
+}
+
+.dt-cell-bilang {
+  color: var(--on-surface-variant);
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+}
+
+.dt-cell-note {
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.dt-error-box,
+.dt-warning-box {
+  padding: 11px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.dt-error-box {
+  background: rgba(220, 38, 38, 0.12);
+  color: #f27373;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+}
+
+.dt-warning-box {
+  background: rgba(250, 204, 21, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(250, 204, 21, 0.3);
+}
+
+.dt-note {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--on-surface-variant);
+}

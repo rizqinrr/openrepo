@@ -9,6 +9,7 @@ import PaletteTool from './PaletteTool.jsx'
 import QrTool from './QrTool.jsx'
 import GradientTool from './GradientTool.jsx'
 import LayoutTool from './LayoutTool.jsx'
+import NameTool from './NameTool.jsx'
 
 export const DEV_TOOL_TABS = [
   {
@@ -98,6 +99,14 @@ export const DEV_TOOL_TABS = [
     title: 'Grid & Flexbox Layout Generator',
     description: 'Kontrol posisi elemen dengan grid atau flexbox, salin CSS, Tailwind, atau prompt.',
     Component: LayoutTool,
+  },
+  {
+    id: 'name',
+    label: 'Name',
+    icon: 'person_search',
+    title: 'Brand & Username Name Tool',
+    description: 'Generate kandidat nama unik dan cek ketersediaan di GitHub dan npm.',
+    Component: NameTool,
   },
 ]
 

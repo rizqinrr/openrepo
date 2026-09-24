@@ -68,21 +68,16 @@
   top: 0;
   z-index: 20;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 10px 14px;
   margin: 0 -14px 20px;
-  overflow-x: auto;
   border-radius: 16px;
   background: var(--glass-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-card);
-  scrollbar-width: none;
-}
-
-.dt-tabs::-webkit-scrollbar {
-  display: none;
 }
 
 .dt-tab {

@@ -7,6 +7,13 @@ export const categories = [
     order: 10,
   },
   {
+    id: 'lms',
+    title: 'LMS',
+    description: 'Landing page produk LMS — lihat tampilan dan alurnya.',
+    icon: 'school',
+    order: 15,
+  },
+  {
     id: 'playground',
     title: 'Playground',
     description: 'Game dan eksperimen interaktif.',

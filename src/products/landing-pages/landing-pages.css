@@ -1,0 +1,216 @@
+.lp-index {
+  min-height: 100dvh;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 56px 20px 80px;
+}
+
+.lp-index-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.lp-index-back:hover {
+  color: var(--primary);
+}
+
+.lp-index-back .material-symbols-outlined {
+  font-size: 17px;
+}
+
+.lp-eyebrow {
+  display: block;
+  margin-top: 40px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--primary);
+}
+
+.lp-index-head h1 {
+  margin: 10px 0 8px;
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--on-surface);
+}
+
+.lp-index-head p {
+  max-width: 560px;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--on-surface-variant);
+}
+
+.lp-count {
+  display: inline-block;
+  margin-top: 18px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.lp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+  margin-top: 32px;
+}
+
+.lp-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--outline-variant);
+  box-shadow: var(--shadow-card);
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.22s ease, border-color 0.18s ease;
+}
+
+.lp-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-dock);
+  border-color: color-mix(in srgb, var(--lp-accent) 55%, var(--outline-variant));
+}
+
+.lp-card-accent {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--lp-accent), color-mix(in srgb, var(--lp-accent) 40%, transparent));
+}
+
+.lp-card-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--lp-accent) 14%, transparent);
+  color: var(--lp-accent);
+  font-size: 24px;
+  margin-top: 12px;
+}
+
+.lp-card h2 {
+  margin: 14px 0 4px;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--on-surface);
+}
+
+.lp-card-tagline {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.lp-card-desc {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--on-surface-variant);
+}
+
+.lp-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.lp-chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  border: 1px solid var(--outline-variant);
+  color: var(--on-surface-variant);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lp-card-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--lp-accent);
+}
+
+.lp-card-open .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.lp-shell {
+  min-height: 100dvh;
+}
+
+.lp-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.lp-topbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--on-surface);
+  text-decoration: none;
+}
+
+.lp-topbar-mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 14px;
+}
+
+.lp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+}
+
+.lp-back:hover {
+  color: var(--primary);
+}
+
+.lp-back .material-symbols-outlined {
+  font-size: 16px;
+}

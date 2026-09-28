@@ -1,266 +1,243 @@
 import { useMemo, useState } from 'react'
+import {
+  generatePasswords,
+  buildPool,
+  passwordEntropy,
+  strengthFor,
+  DEFAULT_LENGTH,
+  MIN_LENGTH,
+  MAX_LENGTH,
+} from '../lib/password.js'
 
-const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz'
-const UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-const DIGITS = '0123456789'
-const SYMBOLS = '!@#$%^&*()-_=+[]{};:,./?'
-const AMBIGUOUS = 'O0Il1'
+const COUNTS = ['1', '2', '4', '6', '8', '10']
 
-function getRandomValues(bytes) {
-  if (globalThis.crypto?.getRandomValues) {
-    return globalThis.crypto.getRandomValues(bytes)
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    return false
   }
-  return Uint8Array.from(bytes, () => Math.floor(Math.random() * 256))
-}
-
-function randomInt(max) {
-  const buffer = new Uint8Array(1)
-  getRandomValues(buffer)
-  const value = buffer[0]
-  const threshold = 256 - (256 % max)
-  if (value < threshold) return value % max
-  return randomInt(max)
-}
-
-function generatePassword(length, options) {
-  let pool = ''
-  if (options.lowercase) pool += LOWERCASE
-  if (options.uppercase) pool += UPPERCASE
-  if (options.digits) pool += DIGITS
-  if (options.symbols) pool += SYMBOLS
-  if (options.excludeAmbiguous) {
-    pool = [...pool].filter((char) => !AMBIGUOUS.includes(char)).join('')
-  }
-  if (!pool) return ''
-
-  const chars = []
-  const required = [
-    options.lowercase ? LOWERCASE : '',
-    options.uppercase ? UPPERCASE : '',
-    options.digits ? DIGITS : '',
-    options.symbols ? SYMBOLS : '',
-  ].filter(Boolean)
-
-  for (const group of required) {
-    const cleanGroup = options.excludeAmbiguous
-      ? [...group].filter((char) => !AMBIGUOUS.includes(char)).join('')
-      : group
-    if (cleanGroup) chars.push(cleanGroup[randomInt(cleanGroup.length)])
-  }
-
-  while (chars.length < length) chars.push(pool[randomInt(pool.length)])
-  for (let i = chars.length - 1; i > 0; i -= 1) {
-    const j = randomInt(i + 1)
-    ;[chars[i], chars[j]] = [chars[j], chars[i]]
-  }
-  return chars.slice(0, length).join('')
-}
-
-function analyzeEntropy(password) {
-  if (!password) return { score: 0, label: '', entropy: 0, checks: [] }
-  let poolSize = 0
-  if (/[a-z]/.test(password)) poolSize += 26
-  if (/[A-Z]/.test(password)) poolSize += 26
-  if (/[0-9]/.test(password)) poolSize += 10
-  if (/[^a-zA-Z0-9]/.test(password)) poolSize += 32
-  const entropy = Math.round(password.length * Math.log2(poolSize || 1))
-  const hasLength = password.length >= 12
-  const hasLower = /[a-z]/.test(password)
-  const hasUpper = /[A-Z]/.test(password)
-  const hasDigit = /[0-9]/.test(password)
-  const hasSymbol = /[^a-zA-Z0-9]/.test(password)
-  const variety = [hasLower, hasUpper, hasDigit, hasSymbol].filter(Boolean).length
-
-  let score = 0
-  if (hasLength) score += 2
-  if (variety >= 3) score += 2
-  if (variety >= 4) score += 1
-  if (entropy >= 80) score += 2
-  else if (entropy >= 60) score += 1
-
-  let label = 'Sangat Lemah'
-  if (score >= 6) label = 'Sangat Kuat'
-  else if (score >= 4) label = 'Kuat'
-  else if (score >= 2) label = 'Sedang'
-
-  const checks = [
-    { ok: hasLength, text: 'Minimal 12 karakter' },
-    { ok: hasLower, text: 'Huruf kecil' },
-    { ok: hasUpper, text: 'Huruf besar' },
-    { ok: hasDigit, text: 'Angka' },
-    { ok: hasSymbol, text: 'Simbol' },
-  ]
-  return { score, label, entropy, checks, maxScore: 7 }
-}
-
-const DEFAULT_OPTIONS = {
-  length: 16,
-  lowercase: true,
-  uppercase: true,
-  digits: true,
-  symbols: true,
-  excludeAmbiguous: false,
 }
 
 export default function PasswordTool() {
-  const [options, setOptions] = useState(DEFAULT_OPTIONS)
-  const [generated, setGenerated] = useState('')
-  const [checkText, setCheckText] = useState('')
-  const [copied, setCopied] = useState(false)
+  const [options, setOptions] = useState({
+    length: DEFAULT_LENGTH,
+    count: 4,
+    useLower: true,
+    useUpper: true,
+    useDigits: true,
+    useSymbols: false,
+    excludeAmbiguous: true,
+    exclude: '',
+  })
+  const [results, setResults] = useState([])
+  const [error, setError] = useState(null)
+  const [copiedIdx, setCopiedIdx] = useState(null)
+  const [copiedAll, setCopiedAll] = useState(false)
 
-  const analysis = useMemo(() => analyzeEntropy(generated), [generated])
-  const checkResult = useMemo(() => analyzeEntropy(checkText), [checkText])
+  const poolInfo = useMemo(() => {
+    try {
+      return buildPool(options)
+    } catch {
+      return null
+    }
+  }, [options])
+
+  const bits = poolInfo ? passwordEntropy(options.length, poolInfo.size) : null
+  const strength = bits != null ? strengthFor(bits) : null
 
   function setOption(key, value) {
-    setOptions((current) => ({ ...current, [key]: value }))
+    setOptions((prev) => ({ ...prev, [key]: value }))
   }
 
   function handleGenerate() {
-    const value = generatePassword(options.length, options)
-    setGenerated(value)
+    setError(null)
+    try {
+      setResults(generatePasswords(options))
+    } catch (e) {
+      setError(e.message)
+      setResults([])
+    }
   }
 
-  async function copyGenerated() {
-    if (!generated) return
-    try {
-      await navigator.clipboard.writeText(generated)
-    } catch {
-      // clipboard tidak tersedia
+  async function handleCopy(text, idx) {
+    if (await copyText(text)) {
+      setCopiedIdx(idx)
+      setTimeout(() => setCopiedIdx(null), 1500)
     }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1200)
+  }
+
+  async function handleCopyAll() {
+    if (await copyText(results.join('\n'))) {
+      setCopiedAll(true)
+      setTimeout(() => setCopiedAll(false), 1500)
+    }
   }
 
   return (
     <div className="dt-tool">
       <div className="dt-kv">
-        <div className="dt-kv-row">
-          <span className="dt-kv-label">Panjang</span>
-          <div className="dt-range-wrap">
+        <div className="dt-kv-row dt-kv-col">
+          <span className="dt-label">Panjang</span>
+          <div className="dt-row">
             <input
               className="dt-range"
+              style={{ flex: 1 }}
               type="range"
-              min="6"
-              max="64"
+              min={MIN_LENGTH}
+              max={MAX_LENGTH}
               value={options.length}
               onChange={(e) => setOption('length', Number(e.target.value))}
             />
-            <span className="dt-kv-value">{options.length}</span>
+            <input
+              style={{ width: 72 }}
+              className="dt-input"
+              type="number"
+              min={MIN_LENGTH}
+              max={MAX_LENGTH}
+              value={options.length}
+              onChange={(e) => {
+                const n = Number(e.target.value)
+                if (Number.isInteger(n) && n >= MIN_LENGTH && n <= MAX_LENGTH) {
+                  setOption('length', n)
+                }
+              }}
+            />
           </div>
         </div>
-      </div>
 
-      <div className="dt-flags dt-check-grid" role="group" aria-label="Aturan password">
-        {[
-          { id: 'lowercase', label: 'Huruf kecil (a–z)' },
-          { id: 'uppercase', label: 'Huruf besar (A–Z)' },
-          { id: 'digits', label: 'Angka (0–9)' },
-          { id: 'symbols', label: 'Simbol (!@#…)' },
-          { id: 'excludeAmbiguous', label: 'Hindari ambigu (O0Il1)' },
-        ].map((item) => (
-          <label key={item.id} className="dt-check dt-check-basic">
+        <div className="dt-kv-row">
+          <span className="dt-kv-label">Jumlah</span>
+          <select
+            className="dt-select"
+            value={String(options.count)}
+            onChange={(e) => setOption('count', Number(e.target.value))}
+          >
+            {COUNTS.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="dt-kv-row dt-kv-col">
+          <span className="dt-kv-label">Tipe karakter</span>
+          <div className="dt-flags">
+            <label className="dt-check-pill">
+              <input
+                type="checkbox"
+                checked={options.useLower}
+                onChange={(e) => setOption('useLower', e.target.checked)}
+              />
+              huruf kecil a–z
+            </label>
+            <label className="dt-check-pill">
+              <input
+                type="checkbox"
+                checked={options.useUpper}
+                onChange={(e) => setOption('useUpper', e.target.checked)}
+              />
+              huruf besar A–Z
+            </label>
+            <label className="dt-check-pill">
+              <input
+                type="checkbox"
+                checked={options.useDigits}
+                onChange={(e) => setOption('useDigits', e.target.checked)}
+              />
+              angka 0–9
+            </label>
+            <label className="dt-check-pill">
+              <input
+                type="checkbox"
+                checked={options.useSymbols}
+                onChange={(e) => setOption('useSymbols', e.target.checked)}
+              />
+              simbol
+            </label>
+          </div>
+        </div>
+
+        <div className="dt-kv-row">
+          <span className="dt-kv-label">Hindari ambigu</span>
+          <label className="dt-check-pill">
             <input
               type="checkbox"
-              checked={options[item.id]}
-              onChange={(e) => setOption(item.id, e.target.checked)}
+              checked={options.excludeAmbiguous}
+              onChange={(e) => setOption('excludeAmbiguous', e.target.checked)}
             />
-            <span>{item.label}</span>
+            0O1Il|
           </label>
-        ))}
+        </div>
+
+        <div className="dt-kv-row">
+          <span className="dt-kv-label">Kecualikan</span>
+          <input
+            style={{ width: 160 }}
+            className="dt-input"
+            type="text"
+            maxLength={20}
+            placeholder="opsional (mis. @#$)"
+            value={options.exclude}
+            onChange={(e) => setOption('exclude', e.target.value)}
+          />
+        </div>
       </div>
 
       <div className="dt-actions">
         <button type="button" className="dt-btn" onClick={handleGenerate}>
           <span className="material-symbols-outlined">refresh</span>
-          Buat Password
+          Generate
         </button>
+        {results.length > 0 && (
+          <button type="button" className="dt-btn dt-btn-ghost" onClick={handleCopyAll}>
+            <span className="material-symbols-outlined">content_copy</span>
+            {copiedAll ? 'Tersalin!' : `Salin semua (${results.length})`}
+          </button>
+        )}
       </div>
 
-      {generated && (
-        <div className="dt-kv">
-          <div className="dt-kv-row">
-            <span className="dt-kv-label">Password</span>
-            <code className="dt-password-value">{generated}</code>
-          </div>
-          <div className="dt-actions">
-            <button type="button" className="dt-btn dt-btn-ghost" onClick={copyGenerated}>
-              <span className="material-symbols-outlined">
-                {copied ? 'check' : 'content_copy'}
-              </span>
-              {copied ? 'Tersalin' : 'Salin'}
-            </button>
-          </div>
-        </div>
-      )}
+      {error && <div className="dt-error-box">{error}</div>}
 
-      {generated && (
-        <div className="dt-strength">
-          <div className="dt-strength-head">
-            <span className="dt-kv-label">Kekuatan password</span>
-            <span className={`dt-strength-label level-${analysis.score}`}>
-              {analysis.label}
-            </span>
-          </div>
-          <div className="dt-strength-bar">
-            <span
-              className="dt-strength-fill"
-              style={{
-                width: `${Math.round((analysis.score / analysis.maxScore) * 100)}%`,
-              }}
-            />
-          </div>
-          <span className="dt-kv-label">
-            Entropi ≈ {analysis.entropy} bit
+      {bits != null && strength && (
+        <p className="dt-note">
+          Pool {poolInfo.size} karakter &times; {options.length} posisi &rarr; entropi{' '}
+          <b>{bits.toFixed(1)} bit</b>
+          <span className={`dt-status-chip is-${strength.level}`} style={{ marginLeft: 8 }}>
+            {strength.label}
           </span>
+        </p>
+      )}
+
+      {results.length > 0 && (
+        <div className="dt-pass-list">
+          {results.map((pwd, i) => (
+            <div className="dt-copy-card" key={`${options.length}-${pwd}-${i}`}>
+              <div className="dt-copy-card-head">
+                <span className="dt-cell-note">#{i + 1}</span>
+                <button
+                  type="button"
+                  className="dt-btn-mini"
+                  onClick={() => handleCopy(pwd, i)}
+                >
+                  <span className="material-symbols-outlined">
+                    {copiedIdx === i ? 'check' : 'content_copy'}
+                  </span>
+                  {copiedIdx === i ? 'Tersalin' : 'Salin'}
+                </button>
+              </div>
+              <p className="dt-copy-value">{pwd}</p>
+            </div>
+          ))}
         </div>
       )}
 
-      <div className="dt-divider" />
-
-      <div className="dt-textarea-wrap">
-        <label className="dt-label" htmlFor="check-password">Periksa kekuatan password</label>
-        <input
-          id="check-password"
-          className="dt-input"
-          type="password"
-          value={checkText}
-          onChange={(e) => setCheckText(e.target.value)}
-          placeholder="ketik password untuk dianalisis"
-          autoComplete="off"
-        />
-      </div>
-
-      {checkText && (
-        <div className="dt-strength">
-          <div className="dt-strength-head">
-            <span className="dt-kv-label">Skor {checkResult.score}/{checkResult.maxScore}</span>
-            <span className={`dt-strength-label level-${checkResult.score}`}>
-              {checkResult.label}
-            </span>
-          </div>
-          <div className="dt-strength-bar">
-            <span
-              className="dt-strength-fill"
-              style={{
-                width: `${Math.round((checkResult.score / checkResult.maxScore) * 100)}%`,
-              }}
-            />
-          </div>
-          <div className="dt-checks">
-            {checkResult.checks.map((check, index) => (
-              <span
-                key={index}
-                className={`dt-check-item${check.ok ? ' is-ok' : ''}`}
-              >
-                <span className="material-symbols-outlined">
-                  {check.ok ? 'check' : 'close'}
-                </span>
-                {check.text}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      <p className="dt-note">
+        Acak dengan kriptografi Web Crypto (crypto.getRandomValues), hasil tidak dikirim ke
+        mana pun. Gunakan password unik per akun.
+      </p>
     </div>
   )
 }

@@ -68,16 +68,21 @@
   top: 0;
   z-index: 20;
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
   padding: 10px 14px;
   margin: 0 -14px 20px;
+  overflow-x: auto;
   border-radius: 16px;
   background: var(--glass-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-card);
+  scrollbar-width: none;
+}
+
+.dt-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .dt-tab {
@@ -1149,4 +1154,30 @@
   font-size: 11.5px;
   line-height: 1.5;
   color: var(--on-surface-variant);
+}
+
+.dt-pass-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.dt-status-chip.is-weak {
+  background: rgba(220, 38, 38, 0.14);
+  color: #f27373;
+}
+
+.dt-status-chip.is-fair {
+  background: rgba(250, 204, 21, 0.14);
+  color: #fbbf24;
+}
+
+.dt-status-chip.is-strong {
+  background: rgba(34, 197, 94, 0.14);
+  color: #2fd573;
+}
+
+.dt-status-chip.is-very-strong {
+  background: var(--primary-soft);
+  color: var(--primary);
 }

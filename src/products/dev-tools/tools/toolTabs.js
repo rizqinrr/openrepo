@@ -108,6 +108,14 @@ export const DEV_TOOL_TABS = [
     description: 'Generate kandidat nama unik dan cek ketersediaan di GitHub dan npm.',
     Component: NameTool,
   },
+  {
+    id: 'password',
+    label: 'Password',
+    icon: 'password',
+    title: 'Password Generator',
+    description: 'Buat password acak yang kuat, cek entropi, dan salin.',
+    Component: PasswordTool,
+  },
 ]
 
 export function findToolById(id) {

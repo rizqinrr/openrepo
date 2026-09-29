@@ -100,10 +100,11 @@
   display: grid;
   place-items: center;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--lp-accent) 14%, transparent);
-  color: var(--lp-accent);
+  background: linear-gradient(135deg, var(--lp-accent), var(--lp-accent-deep));
+  color: var(--lp-accent-contrast, #fff);
   font-size: 24px;
   margin-top: 12px;
+  box-shadow: var(--shadow-soft);
 }
 
 .lp-card h2 {

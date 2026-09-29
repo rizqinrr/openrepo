@@ -23,7 +23,11 @@ export default function LandingPagesIndex() {
             key={landing.slug}
             className="lp-card"
             href={`#/landing-pages/${landing.slug}`}
-            style={{ '--lp-accent': landing.accent }}
+            style={{
+              '--lp-accent': landing.theme.accent,
+              '--lp-accent-deep': landing.theme.accentDeep,
+              '--lp-accent-contrast': landing.theme.accentContrast,
+            }}
           >
             <div className="lp-card-accent" />
             <span className="lp-card-icon material-symbols-outlined" aria-hidden="true">

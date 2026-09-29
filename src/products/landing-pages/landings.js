@@ -9,7 +9,14 @@ export const landings = [
       'LMS kursus coding: jalur bertingkat, tantangan langsung di browser, dan sertifikat.',
     tags: ['LMS', 'Kursus coding', 'Sertifikat'],
     icon: 'school',
-    accent: '#2563eb',
+    theme: {
+      accent: '#059669',
+      accentDeep: '#047857',
+      accentSoft: 'rgba(16, 185, 129, 0.16)',
+      accentContrast: '#ffffff',
+      fontHead: "'Space Grotesk', system-ui, sans-serif",
+      radius: '20px',
+    },
     Page: LmsLanding,
   },
 ]

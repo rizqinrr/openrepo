@@ -13,8 +13,18 @@ export default function LandingPagesPage() {
 
   if (landing) {
     const Landing = landing.Page
+    const t = landing.theme
+    const vars = {
+      '--lp-accent': t.accent,
+      '--lm-accent': t.accent,
+      '--lm-accent-deep': t.accentDeep,
+      '--lm-accent-soft': t.accentSoft,
+      '--lm-accent-contrast': t.accentContrast,
+      '--lm-font-head': t.fontHead,
+      '--lm-radius': t.radius,
+    }
     return (
-      <div className="lp-shell">
+      <div className="lp-shell" style={vars}>
         <div className="lp-topbar">
           <a className="lp-topbar-brand" href="#/" aria-label="OpenRepo beranda">
             <span className="lp-topbar-mark">O</span>

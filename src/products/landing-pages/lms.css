@@ -1,7 +1,39 @@
+html:has(.lp-shell) {
+  scroll-behavior: smooth;
+}
+
 .lm {
   max-width: 1080px;
   margin: 0 auto;
   padding: 0 20px 60px;
+}
+
+.lm :focus-visible {
+  outline: 2px solid var(--lm-accent, var(--primary));
+  outline-offset: 2px;
+}
+
+.lm .is-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.lm .is-reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.lp-shell) {
+    scroll-behavior: auto;
+  }
+
+  .lm .is-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 .lm h1,
@@ -376,6 +408,57 @@
   gap: 14px;
 }
 
+.lm-testimonials {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.lm-testi {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 22px;
+  border-radius: var(--lm-radius, 16px);
+  border: 1px solid var(--outline-variant);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.lm-testi-mark {
+  font-family: var(--lm-font-head, system-ui, sans-serif);
+  font-size: 44px;
+  line-height: 0.6;
+  color: var(--lm-accent, var(--primary));
+}
+
+.lm-testi blockquote {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--on-surface);
+}
+
+.lm-testi figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: auto;
+}
+
+.lm-testi figcaption b {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--on-surface);
+}
+
+.lm-testi figcaption span {
+  font-size: 12px;
+  color: var(--on-surface-variant);
+}
+
 .lm-feature {
   padding: 20px;
   border-radius: var(--lm-radius, 16px);
@@ -526,6 +609,25 @@
   color: var(--on-surface-variant);
 }
 
+.lm-course-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--lm-accent, var(--primary));
+}
+
+.lm-course-link .material-symbols-outlined {
+  font-size: 15px;
+  transition: transform 0.18s ease;
+}
+
+.lm-course:hover .lm-course-link .material-symbols-outlined {
+  transform: translateX(3px);
+}
+
 .lm-faq-list {
   display: flex;
   flex-direction: column;
@@ -624,7 +726,8 @@
   }
 
   .lm-features,
-  .lm-audience {
+  .lm-audience,
+  .lm-testimonials {
     grid-template-columns: 1fr;
   }
 

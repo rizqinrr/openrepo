@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useReveal } from './useReveal.js'
 import './lms.css'
 
 const TRACKS = [
@@ -94,6 +95,24 @@ const COURSES = [
   { title: 'Struktur Data Esensial', level: 'Menengah', len: '14 jam', rating: 4.9 },
 ]
 
+const TESTIMONIALS = [
+  {
+    quote: 'Dulu mati gaya di tengah tutorial. Di sini tantangannya justru yang bikin ketagihan.',
+    name: 'Laras',
+    role: 'QA → Frontend Dev',
+  },
+  {
+    quote: 'Autograder-nya jujur. Salahnya langsung keliatan, jadi aku cepat paham konsepnya.',
+    name: 'Bima',
+    role: 'Mahasiswa Informatika',
+  },
+  {
+    quote: 'Tuntas jalur Frontend dalam 5 bulan sambil kerja. Sertifikatnya masuk portofolio.',
+    name: 'Nadia',
+    role: 'Content Writer → Developer',
+  },
+]
+
 const FAQS = [
   {
     q: 'Apakah LearnCode gratis?',
@@ -127,6 +146,7 @@ const STATS = [
 export default function LmsLanding() {
   const [trackId, setTrackId] = useState('frontend')
   const [openFaq, setOpenFaq] = useState(0)
+  const reveal = useReveal()
   const track = TRACKS.find((t) => t.id === trackId)
 
   return (
@@ -189,7 +209,7 @@ export default function LmsLanding() {
         </div>
       </section>
 
-      <section className="lm-stats" aria-label="Statistik LearnCode">
+      <section className="lm-stats is-reveal" ref={reveal(0)} aria-label="Statistik LearnCode">
         {STATS.map((stat) => (
           <div className="lm-stat" key={stat.label}>
             <b>{stat.value}</b>
@@ -198,7 +218,7 @@ export default function LmsLanding() {
         ))}
       </section>
 
-      <section id="lm-tracks" className="lm-section">
+      <section id="lm-tracks" className="lm-section is-reveal" ref={reveal(1)}>
         <span className="lm-eyebrow">JALUR BELAJAR</span>
         <h2>Pilih jalur, kami yang susun urutannya.</h2>
         <div className="lm-tabs">
@@ -237,7 +257,7 @@ export default function LmsLanding() {
         )}
       </section>
 
-      <section className="lm-section">
+      <section className="lm-section is-reveal" ref={reveal(2)}>
         <span className="lm-eyebrow">FITUR</span>
         <h2>Dirancang supaya kamu benar-benar bisa.</h2>
         <div className="lm-features">
@@ -269,7 +289,7 @@ export default function LmsLanding() {
         </div>
       </section>
 
-      <section className="lm-section">
+      <section className="lm-section is-reveal" ref={reveal(3)}>
         <span className="lm-eyebrow">UNTUK SIAPA</span>
         <h2>Dari yang baru mulai sampai yang beralih karier.</h2>
         <div className="lm-audience">
@@ -283,7 +303,7 @@ export default function LmsLanding() {
         </div>
       </section>
 
-      <section id="lm-courses" className="lm-section">
+      <section id="lm-courses" className="lm-section is-reveal" ref={reveal(4)}>
         <span className="lm-eyebrow">KURSUS UNGGULAN</span>
         <h2>Mulai dari mana? Ini favorit pembelajar.</h2>
         <div className="lm-courses">
@@ -295,12 +315,33 @@ export default function LmsLanding() {
               </div>
               <h3>{course.title}</h3>
               <p className="lm-course-len">{course.len}</p>
+              <p className="lm-course-link">
+                Lihat detail
+                <span className="material-symbols-outlined">arrow_forward</span>
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="lm-section lm-faq">
+      <section className="lm-section is-reveal" ref={reveal(5)}>
+        <span className="lm-eyebrow">KATA MEREKA</span>
+        <h2>Mereka yang sudah jalan duluan.</h2>
+        <div className="lm-testimonials">
+          {TESTIMONIALS.map((testi) => (
+            <figure className="lm-testi" key={testi.name}>
+              <span className="lm-testi-mark">“</span>
+              <blockquote>{testi.quote}</blockquote>
+              <figcaption>
+                <b>{testi.name}</b>
+                <span>{testi.role}</span>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+
+      <section className="lm-section lm-faq is-reveal" ref={reveal(6)}>
         <span className="lm-eyebrow">TANYA JAWAB</span>
         <h2>Masih ragu? Ini jawabannya.</h2>
         <div className="lm-faq-list">
@@ -308,13 +349,20 @@ export default function LmsLanding() {
             <div className={`lm-faq-item${openFaq === i ? ' is-open' : ''}`} key={faq.q}>
               <button
                 type="button"
+                id={`lm-faq-q-${i}`}
                 className="lm-faq-q"
+                aria-expanded={openFaq === i}
+                aria-controls={`lm-faq-a-${i}`}
                 onClick={() => setOpenFaq(openFaq === i ? -1 : i)}
               >
                 <span>{faq.q}</span>
                 <span className="material-symbols-outlined">expand_more</span>
               </button>
-              {openFaq === i && <p className="lm-faq-a">{faq.a}</p>}
+              {openFaq === i && (
+                <p className="lm-faq-a" id={`lm-faq-a-${i}`}>
+                  {faq.a}
+                </p>
+              )}
             </div>
           ))}
         </div>

@@ -1,0 +1,63 @@
+- main [ref=e3]:
+  - generic [ref=e4]:
+    - link "arrow_back OpenRepo" [ref=e5] [cursor=pointer]:
+      - /url: "#/"
+      - generic [ref=e6]: arrow_back
+      - text: OpenRepo
+    - generic [ref=e7]: DESIGN SHOWCASE
+    - heading "Landing Pages" [level=1] [ref=e8]
+    - paragraph [ref=e9]: Koleksi landing page statis yang berdiri sendiri. Klik kartu untuk melihat tampilan penuhnya.
+    - generic [ref=e10]: 4 landing
+  - generic [ref=e11]:
+    - 'link "LearnCode Belajar kode dengan jalur yang jelas. LMS kursus coding: jalur bertingkat, tantangan langsung di browser, dan sertifikat. LMS Kursus coding Sertifikat Buka landing arrow_forward" [ref=e12] [cursor=pointer]':
+      - /url: "#/landing-pages/lms"
+      - generic [aria-hidden] [ref=e14]: school
+      - heading "LearnCode" [level=2] [ref=e15]
+      - paragraph [ref=e16]: Belajar kode dengan jalur yang jelas.
+      - paragraph [ref=e17]: "LMS kursus coding: jalur bertingkat, tantangan langsung di browser, dan sertifikat."
+      - generic [ref=e18]:
+        - generic [ref=e19]: LMS
+        - generic [ref=e20]: Kursus coding
+        - generic [ref=e21]: Sertifikat
+      - generic [ref=e22]:
+        - text: Buka landing
+        - generic [ref=e23]: arrow_forward
+    - 'link "PulseMetrics Pantau produkmu dalam satu dasbor. Analytics SaaS: metrik realtime, funnel, dan alert anomali untuk tim produk. SaaS Analytics Dashboard Buka landing arrow_forward" [ref=e24] [cursor=pointer]':
+      - /url: "#/landing-pages/saas"
+      - generic [aria-hidden] [ref=e26]: query_stats
+      - heading "PulseMetrics" [level=2] [ref=e27]
+      - paragraph [ref=e28]: Pantau produkmu dalam satu dasbor.
+      - paragraph [ref=e29]: "Analytics SaaS: metrik realtime, funnel, dan alert anomali untuk tim produk."
+      - generic [ref=e30]:
+        - generic [ref=e31]: SaaS
+        - generic [ref=e32]: Analytics
+        - generic [ref=e33]: Dashboard
+      - generic [ref=e34]:
+        - text: Buka landing
+        - generic [ref=e35]: arrow_forward
+    - 'link "TokoKita Belanja online terpercaya, penuh promo. Landing marketplace e-commerce ala Shopee: flash sale, kategori, dan katalog produk. E-commerce Marketplace Katalog Buka landing arrow_forward" [ref=e36] [cursor=pointer]':
+      - /url: "#/landing-pages/store"
+      - generic [aria-hidden] [ref=e38]: storefront
+      - heading "TokoKita" [level=2] [ref=e39]
+      - paragraph [ref=e40]: Belanja online terpercaya, penuh promo.
+      - paragraph [ref=e41]: "Landing marketplace e-commerce ala Shopee: flash sale, kategori, dan katalog produk."
+      - generic [ref=e42]:
+        - generic [ref=e43]: E-commerce
+        - generic [ref=e44]: Marketplace
+        - generic [ref=e45]: Katalog
+      - generic [ref=e46]:
+        - text: Buka landing
+        - generic [ref=e47]: arrow_forward
+    - 'link "Domais Produk cloud yang sederhana, aman, dan stabil. Landing cloud provider ala GNAME: domain checker, cloud server, SSL, dan email bisnis. Hosting Cloud Domain Buka landing arrow_forward" [ref=e48] [cursor=pointer]':
+      - /url: "#/landing-pages/hosting"
+      - generic [aria-hidden] [ref=e50]: cloud
+      - heading "Domais" [level=2] [ref=e51]
+      - paragraph [ref=e52]: Produk cloud yang sederhana, aman, dan stabil.
+      - paragraph [ref=e53]: "Landing cloud provider ala GNAME: domain checker, cloud server, SSL, dan email bisnis."
+      - generic [ref=e54]:
+        - generic [ref=e55]: Hosting
+        - generic [ref=e56]: Cloud
+        - generic [ref=e57]: Domain
+      - generic [ref=e58]:
+        - text: Buka landing
+        - generic [ref=e59]: arrow_forward

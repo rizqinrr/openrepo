@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useReveal } from './useReveal.js'
-import './saas.css'
+import { useReveal } from '../useReveal.js'
+import './styles.css'
 
 const FEATURES = [
   { icon: 'monitoring', title: 'Metrik realtime', desc: 'Event masuk ke dasbor kurang dari 2 detik. Money-metric produk selalu terkini.' },

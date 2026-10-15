@@ -215,3 +215,12 @@
 .lp-back .material-symbols-outlined {
   font-size: 16px;
 }
+
+.lp-loading {
+  display: grid;
+  place-items: center;
+  min-height: 40dvh;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+}

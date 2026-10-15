@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useReveal } from './useReveal.js'
-import './store.css'
+import { useReveal } from '../useReveal.js'
+import './styles.css'
 
 const CATEGORIES = [
   { id: 'semua', label: 'Semua', icon: 'apps' },

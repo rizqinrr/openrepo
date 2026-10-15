@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useReveal } from './useReveal.js'
-import './lms.css'
+import { useReveal } from '../useReveal.js'
+import './styles.css'
 
 const TRACKS = [
   {

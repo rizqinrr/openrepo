@@ -1,100 +1,24 @@
-import LmsLanding from './LmsLanding.jsx'
-import SaasLanding from './SaasLanding.jsx'
-import StoreLanding from './StoreLanding.jsx'
-import HostingLanding from './HostingLanding.jsx'
-import RestaurantLanding from './RestaurantLanding.jsx'
+import { lazy } from 'react'
+import { meta as lms } from './lms/meta.js'
+import { meta as saas } from './saas/meta.js'
+import { meta as store } from './store/meta.js'
+import { meta as hosting } from './hosting/meta.js'
+import { meta as restaurant } from './restaurant/meta.js'
+
+const pages = {
+  lms: lazy(() => import('./lms/Landing.jsx')),
+  saas: lazy(() => import('./saas/Landing.jsx')),
+  store: lazy(() => import('./store/Landing.jsx')),
+  hosting: lazy(() => import('./hosting/Landing.jsx')),
+  restaurant: lazy(() => import('./restaurant/Landing.jsx')),
+}
 
 export const landings = [
-  {
-    slug: 'lms',
-    title: 'LearnCode',
-    tagline: 'Belajar kode dengan jalur yang jelas.',
-    description:
-      'LMS kursus coding: jalur bertingkat, tantangan langsung di browser, dan sertifikat.',
-    tags: ['LMS', 'Kursus coding', 'Sertifikat'],
-    icon: 'school',
-    theme: {
-      accent: '#059669',
-      accentDeep: '#047857',
-      accentSoft: 'rgba(16, 185, 129, 0.16)',
-      accentContrast: '#ffffff',
-      fontHead: "'Space Grotesk', system-ui, sans-serif",
-      radius: '20px',
-    },
-    Page: LmsLanding,
-  },
-  {
-    slug: 'saas',
-    title: 'PulseMetrics',
-    tagline: 'Pantau produkmu dalam satu dasbor.',
-    description:
-      'Analytics SaaS: metrik realtime, funnel, dan alert anomali untuk tim produk.',
-    tags: ['SaaS', 'Analytics', 'Dashboard'],
-    icon: 'query_stats',
-    theme: {
-      accent: '#ea580c',
-      accentDeep: '#c2410c',
-      accentSoft: 'rgba(234, 88, 12, 0.16)',
-      accentContrast: '#ffffff',
-      fontHead: "'Playfair Display', Georgia, serif",
-      radius: '14px',
-    },
-    Page: SaasLanding,
-  },
-  {
-    slug: 'store',
-    title: 'TokoKita',
-    tagline: 'Belanja online terpercaya, penuh promo.',
-    description:
-      'Landing marketplace e-commerce ala Shopee: flash sale, kategori, dan katalog produk.',
-    tags: ['E-commerce', 'Marketplace', 'Katalog'],
-    icon: 'storefront',
-    theme: {
-      accent: '#fb5533',
-      accentDeep: '#ee4d2d',
-      accentSoft: 'rgba(251, 85, 51, 0.14)',
-      accentContrast: '#ffffff',
-      fontHead: "'Roboto', system-ui, sans-serif",
-      radius: '6px',
-    },
-    Page: StoreLanding,
-  },
-  {
-    slug: 'hosting',
-    title: 'Domais',
-    tagline: 'Produk cloud yang sederhana, aman, dan stabil.',
-    description:
-      'Landing cloud provider ala GNAME: domain checker, cloud server, SSL, dan email bisnis.',
-    tags: ['Hosting', 'Cloud', 'Domain'],
-    icon: 'cloud',
-    theme: {
-      accent: '#e8001c',
-      accentDeep: '#cc0018',
-      accentSoft: 'rgba(232, 0, 28, 0.12)',
-      accentContrast: '#ffffff',
-      fontHead: "'PingFang SC', 'Noto Sans SC', system-ui, sans-serif",
-      radius: '12px',
-    },
-    Page: HostingLanding,
-  },
-  {
-    slug: 'restaurant',
-    title: 'RasaKita',
-    tagline: 'Masakan rumahan, rasa yang pulang.',
-    description:
-      'Landing rumah makan ala Info Area: menu andalan dengan filter kategori, jam buka, dan reservasi meja.',
-    tags: ['Kuliner', 'Menu', 'Reservasi'],
-    icon: 'restaurant',
-    theme: {
-      accent: '#006cd2',
-      accentDeep: '#005dea',
-      accentSoft: 'rgba(0, 108, 210, 0.10)',
-      accentContrast: '#ffffff',
-      fontHead: "'SuisseIntl', 'Plus Jakarta Sans', system-ui, sans-serif",
-      radius: '8px',
-    },
-    Page: RestaurantLanding,
-  },
+  { ...lms, Page: pages.lms },
+  { ...saas, Page: pages.saas },
+  { ...store, Page: pages.store },
+  { ...hosting, Page: pages.hosting },
+  { ...restaurant, Page: pages.restaurant },
 ]
 
 export function landingBySlug(slug) {

@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { landingBySlug } from './landings.js'
 import LandingPagesIndex from './LandingPagesIndex.jsx'
 import './landing-pages.css'
@@ -35,7 +36,9 @@ export default function LandingPagesPage() {
             Kembali ke daftar landing
           </a>
         </div>
-        <Landing />
+        <Suspense fallback={<div className="lp-loading">Memuat landing…</div>}>
+          <Landing />
+        </Suspense>
       </div>
     )
   }

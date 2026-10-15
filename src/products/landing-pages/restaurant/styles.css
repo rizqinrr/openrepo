@@ -5,30 +5,6 @@
   font-family: 'SuisseIntl', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
 
-.rs :focus-visible {
-  outline: 2px solid var(--lm-accent, #006cd2);
-  outline-offset: 2px;
-}
-
-.rs .is-reveal {
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-
-.rs .is-reveal.is-in {
-  opacity: 1;
-  transform: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rs .is-reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-}
-
 .rs-nav {
   position: sticky;
   top: 0;

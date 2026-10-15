@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { landingBySlug } from './landings.js'
 import LandingPagesIndex from './LandingPagesIndex.jsx'
 import './landing-pages.css'
+import './kit/reveal.css'
 
 function currentSlug() {
   const parts = window.location.hash.split('/').filter(Boolean)

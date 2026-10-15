@@ -5,30 +5,6 @@
   font-family: 'PingFang SC', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
 }
 
-.hd :focus-visible {
-  outline: 2px solid var(--lm-accent, var(--primary));
-  outline-offset: 2px;
-}
-
-.hd .is-reveal {
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-
-.hd .is-reveal.is-in {
-  opacity: 1;
-  transform: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hd .is-reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-}
-
 .hd-nav {
   position: sticky;
   top: 0;

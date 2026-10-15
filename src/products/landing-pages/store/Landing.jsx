@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useReveal } from '../useReveal.js'
+import { useReveal } from '../kit/useReveal.js'
 import './styles.css'
 
 const CATEGORIES = [

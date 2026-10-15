@@ -4,6 +4,7 @@ import { meta as saas } from './saas/meta.js'
 import { meta as store } from './store/meta.js'
 import { meta as hosting } from './hosting/meta.js'
 import { meta as restaurant } from './restaurant/meta.js'
+import { validateLandings } from './kit/validateLandings.js'
 
 const pages = {
   lms: lazy(() => import('./lms/Landing.jsx')),
@@ -20,6 +21,8 @@ export const landings = [
   { ...hosting, Page: pages.hosting },
   { ...restaurant, Page: pages.restaurant },
 ]
+
+validateLandings(landings)
 
 export function landingBySlug(slug) {
   return landings.find((landing) => landing.slug === slug)

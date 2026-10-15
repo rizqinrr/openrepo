@@ -5,30 +5,6 @@
   font-family: 'Roboto', system-ui, -apple-system, sans-serif;
 }
 
-.tk :focus-visible {
-  outline: 2px solid var(--lm-accent, var(--primary));
-  outline-offset: 2px;
-}
-
-.tk .is-reveal {
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-
-.tk .is-reveal.is-in {
-  opacity: 1;
-  transform: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tk .is-reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-}
-
 .tk-nav {
   position: sticky;
   top: 0;

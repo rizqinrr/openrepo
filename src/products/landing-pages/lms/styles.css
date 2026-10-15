@@ -1,39 +1,7 @@
-html:has(.lp-shell) {
-  scroll-behavior: smooth;
-}
-
 .lm {
   max-width: 1080px;
   margin: 0 auto;
   padding: 0 20px 60px;
-}
-
-.lm :focus-visible {
-  outline: 2px solid var(--lm-accent, var(--primary));
-  outline-offset: 2px;
-}
-
-.lm .is-reveal {
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-
-.lm .is-reveal.is-in {
-  opacity: 1;
-  transform: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html:has(.lp-shell) {
-    scroll-behavior: auto;
-  }
-
-  .lm .is-reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
 }
 
 .lm h1,

@@ -1,12 +1,12 @@
 import { Suspense } from 'react'
+import { getHashSegments } from '../../app/routeParams.js'
 import { landingBySlug } from './landings.js'
 import LandingPagesIndex from './LandingPagesIndex.jsx'
 import './landing-pages.css'
 import './kit/reveal.css'
 
 function currentSlug() {
-  const parts = window.location.hash.split('/').filter(Boolean)
-  return parts[2] ?? null
+  return getHashSegments()[1] ?? null
 }
 
 export default function LandingPagesPage() {

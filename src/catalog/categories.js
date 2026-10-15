@@ -7,10 +7,10 @@ export const categories = [
     order: 10,
   },
   {
-    id: 'lms',
-    title: 'LMS',
-    description: 'Landing page produk LMS — lihat tampilan dan alurnya.',
-    icon: 'school',
+    id: 'showcase',
+    title: 'Showcase',
+    description: 'Kumpulan landing page lintas industri — lihat tampilan dan alurnya.',
+    icon: 'web',
     order: 15,
   },
   {

@@ -33,9 +33,9 @@
 .repositories-contribute-link:hover, .repositories-contribute-link:focus-visible, .repositories-back:hover, .repositories-back:focus-visible { border-color: #e8001c; color: #e8001c; outline: 3px solid rgba(232,0,28,.15); outline-offset: 2px; }
 .repositories-back { font-weight: 500; }
 
-.repositories-brand { display: inline-flex; align-items: center; gap: 12px; color: #000; font: 700 21px/normal 'PingFang SC', 'Noto Sans SC', sans-serif; letter-spacing: -.03em; text-decoration: none; }
+.repositories-brand { display: inline-flex; align-items: center; gap: 12px; color: #000; font: 700 21px/normal 'Plus Jakarta Sans', sans-serif; letter-spacing: -.03em; text-decoration: none; }
 .repositories-brand-mark { color: #f47b20; font-size: inherit; }
-.repositories-brand span { font-family: 'PingFang SC', 'Noto Sans SC', sans-serif; }
+.repositories-brand span { font-family: 'Plus Jakarta Sans', sans-serif; }
 .repositories-back { min-height: 44px; padding: 0 15px; border: 1px solid #e9edfa; border-radius: 15px; background: #fff; color: #000; font-size: 14px; font-weight: 500; }
 
 .repositories-hero {
@@ -55,7 +55,7 @@
   margin-top: 14px;
   font-size: clamp(42px, 7vw, 78px);
   line-height: .98;
-  letter-spacing: -.065em;
+  letter-spacing: -.04em;
 }
 
 .repositories-hero p {

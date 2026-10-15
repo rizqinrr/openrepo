@@ -224,8 +224,10 @@ export default function HomePage({ theme = 'light', setTheme = () => {}, themeRo
         </div>
       </section>
 
-      <div className="social-card"><div className="social-row">{SOCIALS.map((social) => <a key={social.label} href={social.href} target="_blank" rel="noopener noreferrer" aria-label={social.label}><social.icon /></a>)}</div></div>
-      <footer className="footer"><p className="footer-copy">&copy; 2026 OpenRepo. {SITE.footerRights}</p></footer>
+      <footer className="home-footer-bar">
+        <div className="social-row">{SOCIALS.map((social) => <a key={social.label} href={social.href} target="_blank" rel="noopener noreferrer" aria-label={social.label}><social.icon /></a>)}</div>
+        <p className="footer-copy">&copy; 2026 OpenRepo. {SITE.footerRights}</p>
+      </footer>
       <div className={`toast${toast ? ' show' : ''}`}><span className="material-symbols-outlined">check_circle</span>{toast}</div>
       {selectedRepository && (
         <div className="repo-modal-backdrop" onClick={() => setSelectedRepository(null)}>

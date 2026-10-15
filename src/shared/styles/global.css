@@ -127,6 +127,22 @@ body {
   justify-content: center;
 }
 
+::selection {
+  background-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--on-surface);
+}
+
+html {
+  caret-color: var(--primary);
+  scrollbar-color: var(--outline-variant) transparent;
+  scrollbar-width: thin;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .container {
   width: 100%;
   max-width: 440px;

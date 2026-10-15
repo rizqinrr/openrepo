@@ -64,6 +64,17 @@ export const repositories = [
     description: 'Viserys Agent mengemas konfigurasi agent, command, skill, hook, referensi, evaluasi, dan task agar workflow coding-agent dapat dipakai konsisten di beberapa harness.',
   },
   {
+    slug: 'rea',
+    name: 'REA',
+    owner: 'morluto',
+    github: 'https://github.com/morluto/rea',
+    stars: repositoryStars.rea,
+    category: 'agent-tools',
+    icon: 'manage_search',
+    summary: 'MCP reverse engineering untuk membedah binary, aplikasi, dan perilaku runtime.',
+    description: 'REA menghubungkan agent ke tool untuk memeriksa binary native, aplikasi JavaScript/Electron, assembly .NET, dan situs web — lengkap dengan bukti serta batasan tiap kesimpulan. Analisis berjalan lokal dan bisa memanfaatkan instalasi Hopper, Ghidra, IDA, atau JADX yang sudah ada.',
+  },
+  {
     slug: 'photocraft',
     name: 'PhotoCraft',
     owner: 'storytold',

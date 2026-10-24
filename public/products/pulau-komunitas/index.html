@@ -1,0 +1,3367 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pulau Komunitas 3D - Fase 1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Strip inventory: geser horizontal kalau layar sempit, tidak ada yang kepotong */
+        #inv-strip { scrollbar-width: none; -ms-overflow-style: none; }
+        #inv-strip::-webkit-scrollbar { display: none; }
+        #inv-strip > * { flex-shrink: 0; }
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: #0f172a;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        /* Glassmorphism UI */
+        .glass {
+            background: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        /* Animasi Balon Chat */
+        @keyframes popIn {
+            0% { transform: translate(-50%, 10px) scale(0.8); opacity: 0; }
+            100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+        }
+        .dpad-btn { touch-action: none; -webkit-user-select: none; }
+        .chat-bubble-3d {
+            position: absolute;
+            pointer-events: none;
+            transform: translate(-50%, -100%);
+            animation: popIn 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+            z-index: 15;
+            white-space: nowrap;
+        }
+        @keyframes pulseRing {
+            0% { transform: scale(0.9); opacity: 0.9; }
+            100% { transform: scale(1.6); opacity: 0; }
+        }
+        .voice-ring {
+            animation: pulseRing 1.2s infinite ease-out;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 10px; }
+    </style>
+</head>
+<body class="text-white">
+
+    <!-- Container Canvas 3D -->
+    <div id="canvas-container" class="relative w-full h-full"></div>
+
+    <!-- Container Label & Balon Chat 3D -->
+    <div id="labels-container" class="absolute inset-0 pointer-events-none overflow-hidden z-10"></div>
+
+    <!-- INDIKATOR WAKTU & CUACA -->
+    <div class="fixed top-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+        <div class="glass rounded-full px-4 py-1.5 flex items-center gap-2 text-xs font-bold shadow-xl">
+            <span id="hud-daynight">☀️</span>
+            <span id="hud-time" class="text-slate-100">09:00</span>
+            <span class="text-slate-500">•</span>
+            <span id="hud-weather">☀️</span>
+        </div>
+    </div>
+
+    <!-- HUD ATAS: Info Pulau, Skill & Tombol GitHub Save -->
+    <div id="hud-topbar" class="hud-hideable fixed top-3 left-3 right-3 flex flex-wrap justify-between items-start gap-2 pointer-events-none z-20">
+        <!-- Info Pemain: chip ramping, skill dilipat (hemat pandangan) -->
+        <div class="glass rounded-2xl p-2.5 pointer-events-auto shadow-xl">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-400 to-teal-500 flex items-center justify-center text-base shadow-md">
+                    🏝️
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-xs leading-tight text-emerald-300">Pulau Komunitas</h1>
+                    <div class="flex items-center gap-1 mt-0.5">
+                        <span class="text-[10px]">⚡</span>
+                        <div class="w-16 sm:w-20 bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                            <div id="bar-energy" class="bg-yellow-400 h-full transition-all duration-300" style="width: 100%"></div>
+                        </div>
+                        <span id="txt-energy" class="font-bold text-yellow-300 text-[10px]">100</span>
+                    </div>
+                </div>
+                <button id="btn-stats-toggle" class="ml-1 w-7 h-7 rounded-xl bg-slate-700/70 hover:bg-slate-600 active:scale-95 text-sm transition" title="Lihat/sembunyikan skill">📊</button>
+                <button id="btn-emergency" class="hidden ml-0.5 px-2 h-7 rounded-xl bg-rose-500/90 hover:bg-rose-400 active:scale-95 text-[10px] font-extrabold text-white transition whitespace-nowrap" title="Makanan darurat +50 energi (1x per 10 menit)">🆘 Darurat</button>
+            </div>
+
+            <!-- Detail Skill (dilipat default) -->
+            <div id="player-detail" class="hidden mt-2 grid grid-cols-4 gap-2 text-xs bg-slate-900/60 p-2 rounded-xl border border-slate-700/50">
+                <div>
+                    <div class="flex justify-between text-sky-300 font-semibold mb-1">
+                        <span>🎣 Mancing</span>
+                        <span id="lvl-fishing">Lv.1</span>
+                    </div>
+                    <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                        <div id="bar-fishing" class="bg-sky-400 h-full transition-all duration-300" style="width: 10%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-amber-300 font-semibold mb-1">
+                        <span>🌴 Panjat</span>
+                        <span id="lvl-foraging">Lv.1</span>
+                    </div>
+                    <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                        <div id="bar-foraging" class="bg-amber-400 h-full transition-all duration-300" style="width: 10%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-rose-300 font-semibold mb-1">
+                        <span>🍳 Masak</span>
+                        <span id="lvl-cooking">Lv.1</span>
+                    </div>
+                    <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                        <div id="bar-cooking" class="bg-rose-400 h-full transition-all duration-300" style="width: 10%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-orange-300 font-semibold mb-1">
+                        <span>⛺ Kemah</span>
+                        <span id="lvl-camping">Lv.1</span>
+                    </div>
+                    <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                        <div id="bar-camping" class="bg-orange-400 h-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory & Save GitHub -->
+        <div class="flex flex-col items-end gap-2 pointer-events-auto">
+            <div id="inv-strip" class="glass rounded-2xl p-2.5 flex items-center gap-2 sm:gap-3 shadow-xl flex-nowrap overflow-x-auto max-w-[calc(100vw-1.5rem)]">
+                <div class="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/80 rounded-xl border border-slate-700" title="Ikan Mentah">
+                    <span>🐟</span>
+                    <span id="inv-fish" class="font-bold text-sm text-sky-300">0</span>
+                </div>
+                <div class="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/80 rounded-xl border border-slate-700" title="Buah Kelapa">
+                    <span>🥥</span>
+                    <span id="inv-coconut" class="font-bold text-sm text-amber-300">0</span>
+                </div>
+                <div class="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/80 rounded-xl border border-slate-700" title="Kayu Bakar">
+                    <span>🪵</span>
+                    <span id="inv-wood" class="font-bold text-sm text-orange-300">2</span>
+                </div>
+                <div class="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/80 rounded-xl border border-slate-700" title="Kepiting">
+                    <span>🦀</span>
+                    <span id="inv-crab" class="font-bold text-sm text-red-300">0</span>
+                </div>
+                <div class="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/80 rounded-xl border border-slate-700" title="Kristal Pulau">
+                    <span>💎</span>
+                    <span id="inv-crystal" class="font-bold text-sm text-cyan-300">0</span>
+                </div>
+                <div class="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/80 rounded-xl border border-slate-700" title="Batu Tambang">
+                    <span>🪨</span>
+                    <span id="inv-stone" class="font-bold text-sm text-stone-300">0</span>
+                </div>
+                <button id="btn-eat-dish" class="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/80 rounded-xl border border-slate-700 active:scale-95 transition" title="Klik untuk makan (+35 Energi)">
+                    <span>🍲</span>
+                    <span id="inv-dish" class="font-bold text-sm text-rose-300">0</span>
+                </button>
+                <button id="btn-mission-modal" class="bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-lg shadow-amber-400/20">
+                    <span>📋</span> <span class="hidden sm:inline">Misi</span>
+                </button>
+                <button id="btn-shop-modal" class="bg-sky-500 hover:bg-sky-400 active:scale-95 text-slate-950 font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-lg shadow-sky-500/20">
+                    <span>🏪</span> <span class="hidden sm:inline">Toko</span>
+                </button>
+                <button id="btn-mp-modal" class="bg-violet-500 hover:bg-violet-400 active:scale-95 text-white font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-lg shadow-violet-500/20">
+                    <span>🌐</span> <span class="hidden sm:inline">Main Bareng</span>
+                </button>
+                <button id="btn-github-modal" class="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
+                    <span>💾</span> <span class="hidden sm:inline">GitHub JSON</span>
+                </button>
+            </div>
+
+            <!-- Petunjuk Singkat (bisa ditutup) -->
+            <div id="hint-bar" class="glass rounded-xl pl-3 pr-1.5 py-1.5 text-[11px] text-slate-300 hidden md:flex items-center gap-2 max-w-[calc(100vw-1.5rem)]">
+                <span>💡 <b>WASD</b>: Jalan | <b>Spasi</b>: Lompat Fisika | <b>E</b>: Aksi (Mancing/Panjat/Masuk Kemah) | <b>Mic</b>: Voice Chat</span>
+                <button id="btn-hint-close" class="shrink-0 w-5 h-5 rounded-full bg-slate-700/80 hover:bg-slate-600 text-slate-300 text-[10px] font-bold leading-none" title="Tutup petunjuk">✕</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MINIGAME TARIK PANCING (FISHING TENSION BAR) -->
+    <div id="fishing-minigame" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 hidden pointer-events-auto">
+        <div class="glass rounded-3xl p-5 w-80 sm:w-96 border-2 border-sky-400/50 shadow-2xl text-center space-y-3">
+            <div class="flex items-center justify-center gap-2 text-sky-300 font-extrabold text-base">
+                <span class="text-2xl animate-bounce">🐟</span>
+                <span>IKAN MENGGIGIT KAIL!</span>
+            </div>
+            <p class="text-xs text-slate-300">Tekan <b>SPASI</b> atau tombol di bawah saat indikator berada di <b>Zona Hijau</b>!</p>
+            
+            <!-- Bar Ketegangan Kail -->
+            <div class="relative w-full h-7 bg-slate-900 rounded-full overflow-hidden border-2 border-slate-700 p-0.5">
+                <!-- Zona Hijau Target (Lebar dipengaruhi level fishing) -->
+                <div id="fish-target-zone" class="absolute top-0 bottom-0 bg-emerald-500/70 border-x-2 border-emerald-300 rounded" style="left: 35%; width: 28%;"></div>
+                <!-- Kursor Bergerak -->
+                <div id="fish-cursor" class="absolute top-0 bottom-0 w-3 bg-amber-400 rounded-full shadow-lg shadow-amber-300" style="left: 10%;"></div>
+            </div>
+
+            <button id="btn-pull-rod" class="w-full bg-gradient-to-r from-sky-400 to-emerald-400 hover:from-sky-300 hover:to-emerald-300 text-slate-950 font-extrabold py-2.5 rounded-2xl shadow-lg active:scale-95 transition">
+                🎣 SENTAK JORAN SEKARANG! (SPASI)
+            </button>
+        </div>
+    </div>
+
+    <!-- BANNER STATUS DALAM TENDA KEMAH -->
+    <div id="tent-overlay" class="fixed top-28 left-1/2 -translate-x-1/2 z-20 hidden pointer-events-auto">
+        <div class="glass px-6 py-3 rounded-2xl border border-amber-400/50 shadow-2xl flex items-center gap-4">
+            <span class="text-2xl">⛺</span>
+            <div>
+                <div class="text-sm font-extrabold text-amber-300">Di Dalam Tenda Kemah</div>
+                <div class="text-xs text-slate-300">Beristirahat sambil mendengar suasana pulau...</div>
+            </div>
+            <button id="btn-exit-tent" class="bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition">
+                Keluar Tenda (E)
+            </button>
+            <button id="btn-dismantle-tent" class="bg-slate-600 hover:bg-slate-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition" title="Bongkar tenda & dapat kembali 1 kayu">
+                🗑️ Bongkar
+            </button>
+        </div>
+    </div>
+
+    <!-- PROMPT INTERAKSI TENGAH BAWAH -->
+    <div id="action-prompt" class="fixed bottom-32 sm:bottom-28 left-1/2 -translate-x-1/2 z-20 hidden pointer-events-auto">
+        <button id="btn-interact" class="bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-extrabold px-6 py-3 rounded-2xl shadow-2xl shadow-amber-500/30 flex items-center gap-2.5 transform transition active:scale-95 border-2 border-white/40 animate-bounce">
+            <span id="action-icon" class="text-xl">🎣</span>
+            <span id="action-text" class="text-sm sm:text-base">Mulai Memancing (Tekan E)</span>
+        </button>
+    </div>
+
+    <!-- NOTIFIKASI TOAST TENGAH ATAS -->
+    <div id="toast-box" class="fixed top-20 left-1/2 -translate-x-1/2 z-40 pointer-events-none transition-all duration-300 opacity-0 -translate-y-4">
+        <div class="glass px-5 py-2.5 rounded-2xl border border-emerald-400/40 shadow-2xl flex items-center gap-2.5">
+            <span id="toast-icon" class="text-lg">✨</span>
+            <span id="toast-text" class="text-xs sm:text-sm font-bold text-emerald-200">Berhasil mendapatkan ikan!</span>
+        </div>
+    </div>
+
+    <!-- HUD BAWAH: Chat Komunitas, Voice Chat & Emote/Kemah -->
+    <div class="fixed bottom-3 left-3 right-3 flex flex-col sm:flex-row justify-between items-end gap-3 pointer-events-none z-20">
+        
+        <!-- Kotak Chat & Voice Chat Komunitas -->
+        <div id="chat-box" class="hud-hideable glass rounded-2xl p-3 w-full sm:w-80 md:w-96 pointer-events-auto shadow-2xl flex flex-col gap-2">
+            <div class="flex justify-between items-center border-b border-slate-700/60 pb-1.5">
+                <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                    <button id="btn-chat-toggle" class="w-5 h-5 rounded-lg bg-slate-700/70 hover:bg-slate-600 text-[10px] text-slate-200 transition" title="Lipat/buka chat">▾</button>
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Obrolan & Voice Pulau (4 Online)
+                </span>
+                <!-- Status Indikator Voice Mic -->
+                <div id="voice-status-badge" class="hidden items-center gap-1.5 bg-rose-500/20 border border-rose-400/40 px-2 py-0.5 rounded-full">
+                    <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                    <span id="voice-status-text" class="text-[10px] font-bold text-rose-300">Mic Aktif</span>
+                </div>
+            </div>
+
+            <div id="chat-body" class="flex flex-col gap-2">
+            <div id="chat-messages" class="h-24 sm:h-28 overflow-y-auto text-xs space-y-1.5 pr-1">
+                <div class="text-slate-300"><b class="text-amber-300">Budi_Dev:</b> Halo semuanya! Sekarang mancing ada tarik-tarikannya nih.</div>
+                <div class="text-slate-300"><b class="text-sky-300">Siti_Art:</b> Tadi aku lihat tangannya pas manjat pohon kelapa, lucu banget pas metik!</div>
+                <div class="text-slate-300"><b class="text-purple-300">Rama_JS:</b> Nyalain mic kalian kalau mau ngobrol suara langsung ya 🎙️</div>
+            </div>
+
+            <!-- Bar Volume Voice Realtime -->
+            <div id="mic-meter-container" class="hidden items-center gap-2 bg-slate-900/90 px-2.5 py-1 rounded-xl border border-slate-700/80">
+                <span class="text-[10px] text-emerald-300 font-bold">🎙️ Suara:</span>
+                <div class="flex-1 bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div id="mic-volume-bar" class="bg-gradient-to-r from-emerald-400 to-teal-300 h-full transition-all duration-75" style="width: 0%"></div>
+                </div>
+                <span id="stt-preview" class="text-[10px] text-slate-400 italic truncate max-w-[110px]">Mendengarkan...</span>
+            </div>
+
+            <form id="chat-form" class="flex gap-1.5 items-center">
+                <input id="chat-input" type="text" maxlength="80" placeholder="Ketik pesan atau pakai Mic..." autocomplete="off"
+                    class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-400">
+                
+                <!-- Tombol Toggle Live Voice Chat (Mic + WebAudio + Speech-to-Bubble) -->
+                <button type="button" id="btn-mic-toggle" title="Nyalakan/Matikan Live Voice Chat"
+                    class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 p-1.5 rounded-xl text-sm transition flex items-center justify-center shrink-0">
+                    🎙️
+                </button>
+
+                <!-- Tombol Rekam Pesan Suara (Voice Note) -->
+                <button type="button" id="btn-voice-note" title="Rekam Pesan Suara (Klik sekali untuk mulai, klik lagi untuk kirim ke chat)"
+                    class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 p-1.5 rounded-xl text-sm transition flex items-center justify-center shrink-0">
+                    ⏺️
+                </button>
+
+                <button type="submit" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-xs transition shrink-0">
+                    Kirim
+                </button>
+            </form>
+            </div>
+        </div>
+
+        <!-- Panel Kontrol Kanan: Pasang Kemah, Lompat, Emote -->
+        <div class="flex flex-wrap items-center justify-end gap-2 pointer-events-auto self-end">
+            <button id="btn-hud-toggle" class="glass hover:bg-slate-800/90 active:scale-95 px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-1 border border-slate-400/30 text-slate-200 shadow-lg" title="Sembunyikan / tampilkan panel & tulisan">
+                <span>👁️</span>
+            </button>
+            <button id="btn-jump" class="glass hover:bg-slate-800/90 active:scale-95 px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-1 border border-emerald-400/30 text-emerald-200 shadow-lg">
+                <span>🦘</span> <span>Lompat</span>
+            </button>
+            <button id="btn-build-tent" class="glass hover:bg-slate-800/90 active:scale-95 px-3.5 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-1.5 border border-amber-400/30 text-amber-200 shadow-lg" title="Pasang atau Pindahkan Tenda Kemah (Butuh 1 Kayu)">
+                <span>⛺</span> <span>Pasang Kemah</span>
+            </button>
+            <button id="btn-wave" class="glass hover:bg-slate-800/90 active:scale-95 px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-1 border border-sky-400/30 text-sky-200 shadow-lg">
+                <span>👋</span> <span>Sapa</span>
+            </button>
+            <button id="btn-dance" class="glass hover:bg-slate-800/90 active:scale-95 px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-1 border border-purple-400/30 text-purple-200 shadow-lg">
+                <span>💃</span> <span>Joget</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- D-PAD VIRTUAL UNTUK MOBILE / LAYAR SENTUH -->
+    <div id="mobile-controls" class="fixed bottom-48 right-4 z-20 grid grid-cols-3 gap-1.5 w-28 h-28 md:hidden pointer-events-auto opacity-80">
+        <div></div>
+        <button data-dir="up" class="dpad-btn glass rounded-xl flex items-center justify-center text-lg active:bg-emerald-500/50">▲</button>
+        <div></div>
+        <button data-dir="left" class="dpad-btn glass rounded-xl flex items-center justify-center text-lg active:bg-emerald-500/50">◀</button>
+        <div class="flex items-center justify-center text-[10px] text-slate-400 font-bold">GERAK</div>
+        <button data-dir="right" class="dpad-btn glass rounded-xl flex items-center justify-center text-lg active:bg-emerald-500/50">▶</button>
+        <div></div>
+        <button data-dir="down" class="dpad-btn glass rounded-xl flex items-center justify-center text-lg active:bg-emerald-500/50">▼</button>
+        <div></div>
+    </div>
+
+    <!-- MODAL SIMULASI GITHUB SAVE DATA -->
+    <!-- MODAL RESEP MASAKAN -->
+    <div id="recipe-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass rounded-3xl max-w-lg w-full p-6 border border-slate-700 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl">🍳</span>
+                    <div>
+                        <h2 class="font-extrabold text-base sm:text-lg text-rose-300">Resep Masakan Pulau</h2>
+                        <p class="text-xs text-slate-400">Pilih resep sesuai bahan & level Masak-mu</p>
+                    </div>
+                </div>
+                <button data-close-modal="recipe-modal" class="text-slate-400 hover:text-white text-xl font-bold px-2">&times;</button>
+            </div>
+            <div id="recipe-list" class="space-y-2.5 max-h-80 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- MODAL MISI HARIAN -->
+    <div id="mission-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass rounded-3xl max-w-lg w-full p-6 border border-slate-700 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl">📋</span>
+                    <div>
+                        <h2 class="font-extrabold text-base sm:text-lg text-amber-300">Misi Harian</h2>
+                        <p class="text-xs text-slate-400">Selesaikan misi & klaim hadiah XP setiap hari</p>
+                    </div>
+                </div>
+                <button data-close-modal="mission-modal" class="text-slate-400 hover:text-white text-xl font-bold px-2">&times;</button>
+            </div>
+            <div id="mission-list" class="space-y-2.5 max-h-80 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- OVERLAY FADE HITAM (transisi teleport) -->
+    <div id="fade-overlay" style="position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .45s;z-index:60;"></div>
+
+    <!-- MODAL MULTIPLAYER -->
+    <div id="mp-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass rounded-3xl max-w-lg w-full p-6 border border-slate-700 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl">🌐</span>
+                    <div>
+                        <h2 class="font-extrabold text-base sm:text-lg text-violet-300">Main Bareng (P2P)</h2>
+                        <p class="text-xs text-slate-400">Buat room & bagikan kode ke temanmu</p>
+                    </div>
+                </div>
+                <button data-close-modal="mp-modal" class="text-slate-400 hover:text-white text-xl font-bold px-2">&times;</button>
+            </div>
+            <div id="mp-setup" class="space-y-3">
+                <div>
+                    <label class="text-xs text-slate-300 font-bold">Nama pemain</label>
+                    <input id="mp-name" type="text" maxlength="16" value="Kamu_Explorer"
+                        class="mt-1 w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-violet-400" />
+                </div>
+                <button id="btn-mp-create" class="w-full bg-violet-500 hover:bg-violet-400 text-white font-extrabold py-2.5 rounded-2xl transition">
+                    🎮 Buat Room Baru
+                </button>
+                <div class="flex gap-2">
+                    <input id="mp-code" type="text" maxlength="6" placeholder="Kode room (mis. XK7P2Q)"
+                        class="flex-1 bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white uppercase outline-none focus:border-violet-400" />
+                    <button id="btn-mp-join" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-extrabold px-5 py-2 rounded-xl transition">
+                        Gabung
+                    </button>
+                </div>
+                <p class="text-[11px] text-slate-500">💡 Butuh internet. Satu jadi host, lainnya gabung pakai kode. Voice chat tetap lokal.</p>
+            </div>
+            <div id="mp-room" class="hidden space-y-3">
+                <div class="flex items-center justify-between bg-slate-900/60 rounded-2xl px-4 py-3 border border-violet-400/30">
+                    <div>
+                        <div class="text-[11px] text-slate-400">Kode Room</div>
+                        <div class="text-2xl font-extrabold tracking-widest text-violet-300" id="mp-room-code">------</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs font-bold text-slate-200" id="mp-room-role">👑 Host</div>
+                        <div class="text-[11px] text-slate-400" id="mp-count">1 pemain</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-300 font-bold mb-1.5">🏆 Peringkat XP</div>
+                    <div id="mp-players" class="space-y-1.5 max-h-40 overflow-y-auto"></div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-300 font-bold mb-1.5">Emote cepat</div>
+                    <div class="flex gap-2">
+                        <button data-emote="👋" class="mp-emote flex-1 bg-slate-800 hover:bg-slate-700 rounded-xl py-2 text-xl transition">👋</button>
+                        <button data-emote="😂" class="mp-emote flex-1 bg-slate-800 hover:bg-slate-700 rounded-xl py-2 text-xl transition">😂</button>
+                        <button data-emote="❤️" class="mp-emote flex-1 bg-slate-800 hover:bg-slate-700 rounded-xl py-2 text-xl transition">❤️</button>
+                        <button data-emote="🎉" class="mp-emote flex-1 bg-slate-800 hover:bg-slate-700 rounded-xl py-2 text-xl transition">🎉</button>
+                        <button data-emote="🐟" class="mp-emote flex-1 bg-slate-800 hover:bg-slate-700 rounded-xl py-2 text-xl transition">🐟</button>
+                    </div>
+                </div>
+                <button id="btn-mp-leave" class="w-full bg-rose-500 hover:bg-rose-400 text-white font-extrabold py-2.5 rounded-2xl transition">
+                    Keluar Room
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL TOKO NPC -->
+    <div id="shop-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass rounded-3xl max-w-lg w-full p-6 border border-slate-700 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl">🏪</span>
+                    <div>
+                        <h2 class="font-extrabold text-base sm:text-lg text-sky-300">Toko Pak Kumis</h2>
+                        <p class="text-xs text-slate-400">"Barter hasil pulau? Dengan senang hati!"</p>
+                    </div>
+                </div>
+                <button data-close-modal="shop-modal" class="text-slate-400 hover:text-white text-xl font-bold px-2">&times;</button>
+            </div>
+            <div id="shop-list" class="space-y-2.5 max-h-80 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div id="github-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass rounded-3xl max-w-lg w-full p-6 border border-slate-700 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl">🐙</span>
+                    <div>
+                        <h2 class="font-extrabold text-base sm:text-lg text-emerald-300">Simulasi Save Data GitHub</h2>
+                        <p class="text-xs text-slate-400">Data JSON ini yang akan dikirim ke repository GitHub komunitas</p>
+                    </div>
+                </div>
+                <button id="btn-close-modal" class="text-slate-400 hover:text-white text-xl font-bold px-2">&times;</button>
+            </div>
+
+            <pre id="github-json-preview" class="bg-slate-950 p-4 rounded-2xl text-xs text-emerald-300 font-mono overflow-x-auto border border-slate-800 max-h-64"></pre>
+
+            <div class="flex justify-between items-center pt-2 gap-3">
+                <button id="btn-copy-json" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition flex-1">
+                    📋 Salin JSON
+                </button>
+                <button id="btn-simulate-commit" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold px-5 py-2.5 rounded-xl transition flex-1">
+                    🚀 Simulasikan Commit ke GitHub
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /********************************************************************
+         * 1. STATE PEMAIN & EFEK SUARA SYNTHESIZER RINGAN (Web Audio API)
+         ********************************************************************/
+        const playerState = {
+            username: "Kamu_Explorer",
+            skills: {
+                fishing: { level: 1, xp: 10 },
+                foraging: { level: 1, xp: 10 },
+                cooking: { level: 1, xp: 10 },
+                camping: { level: 1, xp: 0 }
+            },
+            inventory: {
+                fish: 0,
+                coconut: 0,
+                wood: 2,
+                dish: 0,
+                crab: 0,
+                crystal: 0,
+                stone: 0
+            },
+            energy: 100,
+            emergencyAt: 0, // timestamp terakhir ambil makanan darurat (cooldown 10 menit)
+            upgrades: { rod: false },
+            missions: null,
+            campPosition: null,
+            lastSaved: new Date().toISOString()
+        };
+
+        // Synthesizer Efek Suara Sederhana Tanpa File Eksternal
+        let sfxCtx = null;
+        function playSFX(type) {
+            try {
+                if (!sfxCtx) sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = sfxCtx.createOscillator();
+                const gain = sfxCtx.createGain();
+                osc.connect(gain);
+                gain.connect(sfxCtx.destination);
+
+                const now = sfxCtx.currentTime;
+                if (type === 'splash') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(320, now);
+                    osc.frequency.exponentialRampToValueAtTime(80, now + 0.25);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'success') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(660, now + 0.1);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'fail') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.linearRampToValueAtTime(120, now + 0.3);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'jump') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.exponentialRampToValueAtTime(420, now + 0.18);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
+                    osc.start(now);
+                    osc.stop(now + 0.18);
+                } else if (type === 'hit') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(190, now);
+                    osc.frequency.exponentialRampToValueAtTime(90, now + 0.1);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'pluck') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(520, now);
+                    osc.frequency.exponentialRampToValueAtTime(240, now + 0.12);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                }
+            } catch (e) {}
+        }
+
+        // ===== JOGET INTERAKTIF: beat koplo 128 BPM + lampu disko =====
+        // (Lagu asli dari YouTube tidak bisa diputar langsung karena hak cipta,
+        //  jadi dibuatkan beat original dengan vibe yang sama.)
+        let danceTimer = null, danceStep = 0, danceMoveIdx = 0;
+        const discoLights = [];
+        function danceTone(freq, dur, type, vol, slideTo) {
+            try {
+                if (!sfxCtx) sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const t = sfxCtx.currentTime;
+                const o = sfxCtx.createOscillator(), g = sfxCtx.createGain();
+                o.connect(g); g.connect(sfxCtx.destination);
+                o.type = type;
+                o.frequency.setValueAtTime(freq, t);
+                if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+                g.gain.setValueAtTime(vol, t);
+                g.gain.exponentialRampToValueAtTime(0.01, t + dur);
+                o.start(t); o.stop(t + dur + 0.02);
+            } catch (e) {}
+        }
+        function startDanceMusic() {
+            try {
+                if (!sfxCtx) sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (sfxCtx.state === 'suspended') sfxCtx.resume();
+                stopDanceMusic();
+                const bpm = 128, eighth = 60 / bpm / 2;
+                let nextT = sfxCtx.currentTime + 0.1;
+                danceStep = 0; danceMoveIdx = 0;
+                danceTimer = setInterval(function () {
+                    while (nextT < sfxCtx.currentTime + 0.35) {
+                        const at = nextT - sfxCtx.currentTime;
+                        const playAt = function (fn) { setTimeout(fn, Math.max(0, at * 1000)); };
+                        const s = danceStep % 16;
+                        if (s % 4 === 0) playAt(function () { danceTone(150, 0.22, 'sine', 0.5, 42); });       // kick
+                        if (s % 2 === 1) playAt(function () { danceTone(6500, 0.05, 'square', 0.07); });        // hat
+                        if (s === 4 || s === 12) playAt(function () { danceTone(210, 0.12, 'triangle', 0.25); }); // snare
+                        if (s % 4 === 0) playAt(function () {                                                  // bass koplo
+                            danceTone([55, 55, 65.41, 49][Math.floor(s / 4)], 0.28, 'sawtooth', 0.14);
+                        });
+                        nextT += eighth;
+                        danceStep++;
+                    }
+                    danceMoveIdx = Math.floor(danceStep / 32) % 4; // ganti gerakan tiap 2 bar
+                }, 120);
+            } catch (e) {}
+        }
+        function stopDanceMusic() {
+            if (danceTimer) { clearInterval(danceTimer); danceTimer = null; }
+        }
+        // Bersihkan musik & pose joget TANPA mengubah aktivitas (idempotent).
+        function danceCleanup() {
+            stopDanceMusic();
+            playerMesh.rotation.z = 0;
+            if (playerMesh.position.y < 1.6) playerMesh.position.y = 1.0;
+            playerMesh.userData.leftArmPivot.rotation.set(0, 0, 0);
+            playerMesh.userData.rightArmPivot.rotation.set(0, 0, 0);
+        }
+        function stopDancing() {
+            danceCleanup();
+            clearActivity();
+        }
+
+        // Helper tampilkan Toast Notifikasi
+        let toastTimeout;
+        function showToast(icon, message) {
+            const box = document.getElementById('toast-box');
+            document.getElementById('toast-icon').textContent = icon;
+            document.getElementById('toast-text').textContent = message;
+            box.classList.remove('opacity-0', '-translate-y-4');
+            box.classList.add('opacity-100', 'translate-y-0');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                box.classList.remove('opacity-100', 'translate-y-0');
+                box.classList.add('opacity-0', '-translate-y-4');
+            }, 3200);
+        }
+
+        // Update tampilan HUD Skill & Inventory
+        function updateHUD() {
+            document.getElementById('inv-fish').textContent = playerState.inventory.fish;
+            document.getElementById('inv-coconut').textContent = playerState.inventory.coconut;
+            document.getElementById('inv-wood').textContent = playerState.inventory.wood;
+            document.getElementById('inv-dish').textContent = playerState.inventory.dish;
+            document.getElementById('inv-crab').textContent = playerState.inventory.crab;
+            document.getElementById('inv-crystal').textContent = playerState.inventory.crystal;
+            document.getElementById('inv-stone').textContent = playerState.inventory.stone;
+
+            document.getElementById('bar-energy').style.width = playerState.energy + '%';
+            document.getElementById('txt-energy').textContent = Math.round(playerState.energy);
+            ['fishing', 'foraging', 'cooking', 'camping'].forEach(skill => {
+                const data = playerState.skills[skill];
+                document.getElementById(`lvl-${skill}`).textContent = `Lv.${data.level}`;
+                document.getElementById(`bar-${skill}`).style.width = `${data.xp}%`;
+            });
+        }
+
+        // ===== TAHAP 2: EKONOMI GAME =====
+        const RECIPES = [
+            { id:'ikan_bakar',  name:'Ikan Bakar',        icon:'🐟', need:{fish:1},            give:1, xp:45,  minLevel:1 },
+            { id:'kelapa_bakar',name:'Kelapa Bakar',      icon:'🥥', need:{coconut:1},         give:1, xp:30,  minLevel:1 },
+            { id:'gulai_pulau', name:'Gulai Pulau',       icon:'🍲', need:{fish:1,coconut:1},   give:2, xp:80,  minLevel:3 },
+            { id:'sup_nelayan', name:'Sup Spesial Nelayan',icon:'🦐', need:{fish:2,coconut:1},   give:3, xp:120, minLevel:5 },
+            { id:'kepiting_bakar', name:'Kepiting Bakar', icon:'🦀', need:{crab:1}, give:1, xp:40, minLevel:2 },
+        ];
+        const MISSION_DEFS = [
+            { id:'fish2',  icon:'🎣', text:'Tangkap 2 ikan',            target:2,  skill:'fishing',  xp:50 },
+            { id:'cook2',  icon:'🍳', text:'Masak 2 hidangan',          target:2,  skill:'cooking',  xp:50 },
+            { id:'coco3',  icon:'🥥', text:'Panen 3 kelapa',            target:3,  skill:'foraging', xp:50 },
+            { id:'rest30', icon:'⛺', text:'Istirahat 30 detik di tenda',target:30, skill:'camping',  xp:40 },
+        ];
+        const SHOP_ITEMS = [
+            { id:'wood3', icon:'🪵', name:'3 Kayu Bakar', cost:{fish:2},    desc:'Bahan pasang tenda', once:false },
+            { id:'rod',   icon:'🎣', name:'Joran Kuat',   cost:{fish:5},    desc:'Zona hijau +8% permanen', once:true },
+            { id:'fish2', icon:'🐟', name:'2 Ikan Segar', cost:{coconut:4}, desc:'Tukar kelapa jadi ikan', once:false },
+            { id:'fish4', icon:'🐟', name:'4 Ikan Segar', cost:{crystal:1}, desc:'Tukar kristal gua', once:false },
+            { id:'fish3', icon:'🐟', name:'3 Ikan Segar', cost:{crab:2}, desc:'Tukar kepiting', once:false },
+            { id:'fish3b', icon:'🐟', name:'2 Ikan Segar', cost:{stone:3}, desc:'Tukar batu tambang', once:false },
+        ];
+
+        // ===== TAHAP 1: SAVE/LOAD localStorage (progres tidak hilang saat refresh) =====
+        const SAVE_KEY = 'pulauKomunitas_save_v1';
+        let lastAutoSave = 0;
+        function saveGame(silent) {
+            try {
+                playerState.lastSaved = new Date().toISOString();
+                playerState.playerPos = {
+                    x: +playerMesh.position.x.toFixed(2),
+                    z: +playerMesh.position.z.toFixed(2)
+                };
+                localStorage.setItem(SAVE_KEY, JSON.stringify(playerState));
+                if (!silent) {
+                    showToast('💾', 'Progres tersimpan!');
+                    updateHUD();
+                }
+            } catch (err) { /* storage penuh / mode privat: abaikan */ }
+        }
+        function loadGame() {
+            try {
+                const raw = localStorage.getItem(SAVE_KEY);
+                if (!raw) return false;
+                const data = JSON.parse(raw);
+                // Gabungkan agar save lama yang belum punya skill baru tetap valid
+                if (data.skills) {
+                    for (const k of Object.keys(playerState.skills)) {
+                        if (data.skills[k]) Object.assign(playerState.skills[k], data.skills[k]);
+                    }
+                }
+                if (data.inventory) Object.assign(playerState.inventory, data.inventory);
+                if (typeof data.energy === 'number') playerState.energy = Math.max(0, Math.min(100, data.energy));
+                if (typeof data.emergencyAt === 'number') playerState.emergencyAt = data.emergencyAt;
+                if (data.upgrades) Object.assign(playerState.upgrades, data.upgrades);
+                if (data.missions) playerState.missions = data.missions;
+                ensureMissions();
+                if (data.playerPos) {
+                    playerMesh.position.x = data.playerPos.x;
+                    playerMesh.position.z = data.playerPos.z;
+                }
+                updateHUD();
+                return true;
+            } catch (err) { return false; }
+        }
+
+        function addSkillXP(skillName, amount) {
+            const skill = playerState.skills[skillName];
+            skill.xp += amount;
+            if (skill.xp >= 100) {
+                skill.level += 1;
+                skill.xp = skill.xp - 100;
+                playSFX('success');
+                showToast('🎉', `Level Up! Skill ${skillName.toUpperCase()} naik ke Lv.${skill.level}!`);
+            }
+            updateHUD();
+        }
+
+        // ===== TAHAP 2: ENERGI =====
+        function useEnergy(n) {
+            if (playerState.energy < n) {
+                showToast('⚡', playerState.energy < 20
+                    ? 'Kamu kelelahan! Tekan 🆘 Darurat di panel atas untuk makanan darurat.'
+                    : 'Kamu kelelahan! Makan hidangan 🍲 untuk pulih.');
+                showCharacterBubble(playerLabel, 'Aduh capek... perlu makan nih 😮‍💨');
+                updateEmergencyBtn();
+                return false;
+            }
+            playerState.energy -= n;
+            updateHUD();
+            updateEmergencyBtn();
+            return true;
+        }
+        function eatDish() {
+            if (playerState.inventory.dish < 1) {
+                showToast('🍲', 'Tidak ada hidangan untuk dimakan! Masak dulu di api unggun 🔥');
+                return;
+            }
+            playerState.inventory.dish -= 1;
+            playerState.energy = Math.min(100, playerState.energy + 35);
+            playSFX('success');
+            showCharacterBubble(playerLabel, 'Nyam nyam! Energi pulih ⚡✨');
+            showToast('🍲', 'Makan hidangan: +35 Energi ⚡');
+            updateHUD();
+            saveGame(true);
+        }
+
+        // ===== MAKANAN DARURAT: +50 energi, 1x per 10 menit, saat energi sekarat =====
+        const EMERGENCY_COOLDOWN = 10 * 60 * 1000;
+        function emergencyReady() {
+            return Date.now() - (playerState.emergencyAt || 0) >= EMERGENCY_COOLDOWN;
+        }
+        function emergencyLeftMs() {
+            return Math.max(0, EMERGENCY_COOLDOWN - (Date.now() - (playerState.emergencyAt || 0)));
+        }
+        function updateEmergencyBtn() {
+            const b = document.getElementById('btn-emergency');
+            if (!b) return;
+            // Hanya muncul saat energi rendah (< 20) — kalau energi cukup, UI tetap bersih
+            if (playerState.energy >= 20) { b.classList.add('hidden'); return; }
+            b.classList.remove('hidden');
+            if (emergencyReady()) {
+                b.disabled = false;
+                b.textContent = '🆘 Darurat';
+                b.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                const s = Math.ceil(emergencyLeftMs() / 1000);
+                b.disabled = true;
+                b.textContent = '🆘 ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+                b.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+        function takeEmergencyFood() {
+            if (!emergencyReady()) { updateEmergencyBtn(); return; }
+            playerState.emergencyAt = Date.now();
+            playerState.energy = Math.min(100, playerState.energy + 50);
+            playSFX('success');
+            showCharacterBubble(playerLabel, '🆘 Makanan darurat! Energi +50 ⚡');
+            showToast('🆘', 'Makanan darurat: +50 Energi! Berikutnya 10 menit lagi.');
+            updateHUD();
+            updateEmergencyBtn();
+            saveGame(true);
+        }
+        document.getElementById('btn-emergency').addEventListener('click', takeEmergencyFood);
+        setInterval(updateEmergencyBtn, 1000); // hitung mundur cooldown live
+
+        // ===== TAHAP 2: MISI HARIAN =====
+        function todayStr() { return new Date().toISOString().slice(0, 10); }
+        function ensureMissions() {
+            const t = todayStr();
+            if (playerState.missions && playerState.missions.date === t) return;
+            let seed = 0;
+            for (const c of t) seed += c.charCodeAt(0);
+            const pool = MISSION_DEFS.slice();
+            const list = [];
+            for (let i = 0; i < 3 && pool.length; i++) {
+                const def = pool.splice((seed + i * 7) % pool.length, 1)[0];
+                list.push({ id: def.id, progress: 0, claimed: false });
+            }
+            playerState.missions = { date: t, list: list };
+        }
+        function missionDef(id) { return MISSION_DEFS.find(function (m) { return m.id === id; }); }
+        function bumpMission(id, n) {
+            ensureMissions();
+            const m = playerState.missions.list.find(function (x) { return x.id === id; });
+            if (!m) return;
+            const def = missionDef(id);
+            if (m.progress >= def.target || m.claimed) return;
+            m.progress = Math.min(def.target, m.progress + n);
+            if (m.progress >= def.target) {
+                playSFX('success');
+                showToast('📋', 'Misi selesai: ' + def.text + '! Klaim hadiahmu 🎁');
+            }
+            if (!document.getElementById('mission-modal').classList.contains('hidden')) renderMissions();
+        }
+        function claimMission(id) {
+            const m = playerState.missions.list.find(function (x) { return x.id === id; });
+            const def = missionDef(id);
+            if (!m || m.claimed || m.progress < def.target) return;
+            m.claimed = true;
+            addSkillXP(def.skill, def.xp);
+            showToast('🎁', 'Hadiah diklaim: +' + def.xp + ' XP ' + def.skill.toUpperCase() + '!');
+            renderMissions();
+            saveGame(true);
+        }
+        function renderMissions() {
+            ensureMissions();
+            const box = document.getElementById('mission-list');
+            box.innerHTML = '';
+            playerState.missions.list.forEach(function (m) {
+                const def = missionDef(m.id);
+                const pct = Math.round((m.progress / def.target) * 100);
+                const row = document.createElement('div');
+                row.className = 'bg-slate-900/60 border border-slate-700/50 rounded-2xl p-3.5 flex items-center gap-3';
+                let action;
+                if (m.claimed) action = '<span class="text-emerald-400 font-bold text-xs">✅ Selesai</span>';
+                else if (m.progress >= def.target) action = '<button data-claim="' + m.id + '" class="bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold px-4 py-2 rounded-xl transition">🎁 Klaim</button>';
+                else action = '<span class="text-slate-400 text-xs font-bold">' + m.progress + '/' + def.target + '</span>';
+                row.innerHTML =
+                    '<span class="text-3xl">' + def.icon + '</span>' +
+                    '<div class="flex-1">' +
+                        '<div class="text-sm font-bold text-slate-100">' + def.text + '</div>' +
+                        '<div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden mt-1.5">' +
+                            '<div class="bg-amber-400 h-full transition-all" style="width:' + pct + '%"></div>' +
+                        '</div>' +
+                        '<div class="text-[11px] text-slate-400 mt-1">Hadiah: +' + def.xp + ' XP ' + def.skill + '</div>' +
+                    '</div>' + action;
+                box.appendChild(row);
+            });
+            box.querySelectorAll('[data-claim]').forEach(function (b) {
+                b.addEventListener('click', function () { claimMission(b.getAttribute('data-claim')); });
+            });
+        }
+
+        // ===== TAHAP 2: RESEP MASAKAN =====
+        function recipeCostText(r) {
+            const parts = [];
+            if (r.need.fish) parts.push(r.need.fish + '🐟');
+            if (r.need.coconut) parts.push(r.need.coconut + '🥥');
+            if (r.need.crab) parts.push(r.need.crab + '🦀');
+            return parts.join(' + ');
+        }
+        function canCook(r) {
+            if (playerState.skills.cooking.level < r.minLevel) return false;
+            for (const k of Object.keys(r.need)) {
+                if ((playerState.inventory[k] || 0) < r.need[k]) return false;
+            }
+            return true;
+        }
+        function renderRecipes() {
+            const box = document.getElementById('recipe-list');
+            box.innerHTML = '';
+            RECIPES.forEach(function (r) {
+                const ok = canCook(r);
+                const locked = playerState.skills.cooking.level < r.minLevel;
+                const row = document.createElement('div');
+                row.className = 'bg-slate-900/60 border border-slate-700/50 rounded-2xl p-3.5 flex items-center gap-3' + (ok ? '' : ' opacity-60');
+                row.innerHTML =
+                    '<span class="text-3xl">' + r.icon + '</span>' +
+                    '<div class="flex-1">' +
+                        '<div class="text-sm font-bold text-slate-100">' + r.name + '</div>' +
+                        '<div class="text-[11px] text-slate-400 mt-0.5">' + recipeCostText(r) + ' → ' + r.give + '🍲 &nbsp;•&nbsp; +' + r.xp + ' XP' +
+                        (locked ? ' &nbsp;•&nbsp; 🔒 Butuh Masak Lv.' + r.minLevel : '') + '</div>' +
+                    '</div>' +
+                    '<button data-cook="' + r.id + '" ' + (ok ? '' : 'disabled') +
+                        ' class="text-xs font-extrabold px-4 py-2 rounded-xl transition ' +
+                        (ok ? 'bg-rose-500 hover:bg-rose-400 text-white' : 'bg-slate-700 text-slate-500 cursor-not-allowed') + '">Masak</button>';
+                box.appendChild(row);
+            });
+            box.querySelectorAll('[data-cook]').forEach(function (b) {
+                b.addEventListener('click', function () { cookRecipe(b.getAttribute('data-cook')); });
+            });
+        }
+        function cookRecipe(id) {
+            const r = RECIPES.find(function (x) { return x.id === id; });
+            if (!r || !canCook(r)) return;
+            if (!useEnergy(5)) return;
+            closeModal('recipe-modal');
+            setActivity('cooking');
+            showCharacterBubble(playerLabel, '🍳 Memasak ' + r.name + '...');
+            showToast('🔥', 'Memasak ' + r.name + '...');
+            let cookTick = 0;
+            const cookAnim = setInterval(function () {
+                if (currentActivity !== 'cooking') { clearInterval(cookAnim); return; } // AUDIT: batal
+                cookTick += 0.4;
+                playerMesh.userData.rightArmPivot.rotation.x = -Math.PI * 0.4 + Math.sin(cookTick) * 0.25;
+                playerMesh.userData.rightArmPivot.rotation.y = Math.cos(cookTick) * 0.25;
+            }, 50);
+            setTimeout(function () {
+                clearInterval(cookAnim);
+                if (currentActivity !== 'cooking') return; // AUDIT: jangan beri hasil kalau dibatalkan
+                playerMesh.userData.rightArmPivot.rotation.set(0, 0, 0);
+                for (const k of Object.keys(r.need)) playerState.inventory[k] -= r.need[k];
+                playerState.inventory.dish += r.give;
+                clearActivity();
+                addSkillXP('cooking', r.xp);
+                bumpMission('cook2', r.give);
+                playSFX('success');
+                showCharacterBubble(playerLabel, r.name + ' matang! +' + r.give + ' hidangan 🍲✨');
+                showToast('🍲', '+' + r.give + ' Hidangan & +' + r.xp + ' XP Masak!');
+                saveGame(true);
+            }, 2200);
+        }
+
+        // ===== TAHAP 2: TOKO NPC =====
+        function renderShop() {
+            const box = document.getElementById('shop-list');
+            box.innerHTML = '';
+            SHOP_ITEMS.forEach(function (item) {
+                const owned = item.once && playerState.upgrades.rod && item.id === 'rod';
+                let affordable = !owned;
+                const costParts = [];
+                const costIcon = { fish: '🐟', coconut: '🥥', crab: '🦀', crystal: '💎', stone: '🪨' };
+                for (const k of Object.keys(item.cost)) {
+                    costParts.push(item.cost[k] + (costIcon[k] || k));
+                    if ((playerState.inventory[k] || 0) < item.cost[k]) affordable = false;
+                }
+                const row = document.createElement('div');
+                row.className = 'bg-slate-900/60 border border-slate-700/50 rounded-2xl p-3.5 flex items-center gap-3' + (affordable ? '' : ' opacity-60');
+                row.innerHTML =
+                    '<span class="text-3xl">' + item.icon + '</span>' +
+                    '<div class="flex-1">' +
+                        '<div class="text-sm font-bold text-slate-100">' + item.name + '</div>' +
+                        '<div class="text-[11px] text-slate-400 mt-0.5">' + item.desc + ' • Harga: ' + costParts.join(' + ') + '</div>' +
+                    '</div>' +
+                    (owned
+                        ? '<span class="text-emerald-400 font-bold text-xs">✅ Dimiliki</span>'
+                        : '<button data-buy="' + item.id + '" ' + (affordable ? '' : 'disabled') +
+                          ' class="text-xs font-extrabold px-4 py-2 rounded-xl transition ' +
+                          (affordable ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950' : 'bg-slate-700 text-slate-500 cursor-not-allowed') + '">Beli</button>');
+                box.appendChild(row);
+            });
+            box.querySelectorAll('[data-buy]').forEach(function (b) {
+                b.addEventListener('click', function () { buyShop(b.getAttribute('data-buy')); });
+            });
+        }
+        function buyShop(id) {
+            const item = SHOP_ITEMS.find(function (x) { return x.id === id; });
+            if (!item) return;
+            if (item.once && item.id === 'rod' && playerState.upgrades.rod) return;
+            for (const k of Object.keys(item.cost)) {
+                if ((playerState.inventory[k] || 0) < item.cost[k]) {
+                    showToast('🏪', 'Bahan tidak cukup!');
+                    return;
+                }
+            }
+            for (const k of Object.keys(item.cost)) playerState.inventory[k] -= item.cost[k];
+            if (id === 'wood3') { playerState.inventory.wood += 3; }
+            else if (id === 'fish2') { playerState.inventory.fish += 2; }
+            else if (id === 'fish4') { playerState.inventory.fish += 4; }
+            else if (id === 'fish3') { playerState.inventory.fish += 3; }
+            else if (id === 'fish3b') { playerState.inventory.fish += 2; }
+            else if (id === 'rod') { playerState.upgrades.rod = true; }
+            playSFX('success');
+            showToast('🏪', 'Membeli: ' + item.name + '!');
+            showCharacterBubble(playerLabel, 'Dapat ' + item.name + '! 🛍️✨');
+            updateHUD();
+            renderShop();
+            saveGame(true);
+        }
+
+        // ===== Modal helper umum =====
+        function openModal(id) { resetKeys(); document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function anyModalOpen() {
+            return ['github-modal', 'recipe-modal', 'mission-modal', 'shop-modal', 'mp-modal'].some(function (id) {
+                return !document.getElementById(id).classList.contains('hidden');
+            });
+        }
+
+        // Teleport dengan fade hitam (dipakai masuk/keluar tambang)
+        function fadeTeleport(x, z, msg, done) {
+            const f = document.getElementById('fade-overlay');
+            resetKeys();
+            f.style.opacity = '1';
+            setTimeout(function () {
+                playerMesh.position.set(x, 1.0, z);
+                if (done) done();
+                if (msg) showToast('⛏️', msg);
+                setTimeout(function () { f.style.opacity = '0'; }, 200);
+            }, 500);
+        }
+
+        // ===== TAHAP 3: MULTIPLAYER P2P (PeerJS, topologi bintang) =====
+        // Satu pemain jadi HOST (pemilik kode room), lainnya gabung sebagai tamu.
+        // Host meneruskan posisi & chat ke semua tamu. Tanpa server sendiri.
+        const MP = {
+            peer: null, code: null, isHost: false, connected: false,
+            conns: {},        // host: peerId -> DataConnection
+            hostConn: null,    // tamu: koneksi ke host
+            players: {},      // host: peerId -> {name,color,x,z,ry,xp,last}
+            view: {},         // peerId -> {mesh, ui, tx, tz, try_}
+            myColor: 0x3b82f6,
+            name: playerState.username,
+            lastSend: 0,
+        };
+        const MP_COLORS = [0x3b82f6, 0xec4899, 0x8b5cf6, 0xf97316, 0x14b8a6, 0xeab308];
+        const MP_PREFIX = 'pulaukomunitas-v1-';
+        function mpTotalXP() {
+            return Object.values(playerState.skills).reduce(function (a, s) { return a + (s.level - 1) * 100 + s.xp; }, 0);
+        }
+        function mpToast(msg) { showToast('🌐', msg); }
+        function mpGenCode() {
+            const abc = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+            let c = '';
+            for (let i = 0; i < 6; i++) c += abc[Math.floor(Math.random() * abc.length)];
+            return c;
+        }
+        function mpReadName() {
+            const v = document.getElementById('mp-name').value.trim().slice(0, 16);
+            MP.name = v || 'Penjelajah';
+            playerState.username = MP.name;
+        }
+
+        function mpCreateRoom() {
+            if (typeof Peer === 'undefined') { mpToast('Multiplayer butuh internet 🌐'); return; }
+            if (MP.peer) return;
+            mpReadName();
+            MP.code = mpGenCode();
+            let peer;
+            try { peer = new Peer(MP_PREFIX + MP.code.toLowerCase()); }
+            catch (e) { mpToast('Gagal membuat room 😢'); return; }
+            MP.peer = peer;
+            peer.on('open', function () {
+                MP.isHost = true;
+                MP.connected = true;
+                mpShowRoom();
+                mpToast('Room ' + MP.code + ' dibuat! Bagikan kodenya 🎉');
+            });
+            peer.on('connection', function (conn) {
+                conn.on('open', function () {
+                    MP.conns[conn.peer] = conn;
+                    conn.on('data', function (d) { mpHostOnData(conn, d); });
+                    conn.on('close', function () { mpRemoveGuest(conn.peer); });
+                });
+            });
+            peer.on('error', function (err) {
+                if (err.type === 'unavailable-id') mpToast('Kode dipakai, coba buat lagi 🔁');
+                else if (err.type === 'peer-unavailable') mpToast('Kode room tidak ditemukan 🔍');
+                else mpToast('Koneksi bermasalah: ' + err.type);
+                mpCleanupPeer();
+            });
+        }
+
+        function mpJoinRoom() {
+            if (typeof Peer === 'undefined') { mpToast('Multiplayer butuh internet 🌐'); return; }
+            if (MP.peer) return;
+            const code = document.getElementById('mp-code').value.trim().toUpperCase();
+            if (code.length < 4) { mpToast('Masukkan kode room dulu 🔑'); return; }
+            mpReadName();
+            MP.code = code;
+            let peer;
+            try { peer = new Peer(); }
+            catch (e) { mpToast('Gagal gabung room 😢'); return; }
+            MP.peer = peer;
+            peer.on('open', function () {
+                const conn = peer.connect(MP_PREFIX + code.toLowerCase(), { reliable: true });
+                MP.hostConn = conn;
+                conn.on('open', function () {
+                    MP.isHost = false;
+                    MP.connected = true;
+                    conn.send({ t: 'hello', name: MP.name, xp: mpTotalXP() });
+                    mpShowRoom();
+                    mpToast('Bergabung ke room ' + code + '! 🎉');
+                });
+                conn.on('data', mpGuestOnData);
+                conn.on('close', function () {
+                    mpToast('Terputus dari room 📴');
+                    mpLeave(true);
+                });
+            });
+            peer.on('error', function (err) {
+                if (err.type === 'peer-unavailable') mpToast('Kode room tidak ditemukan 🔍');
+                else mpToast('Koneksi bermasalah: ' + err.type);
+                mpCleanupPeer();
+            });
+        }
+
+        function mpHostOnData(conn, d) {
+            if (d.t === 'hello') {
+                const color = MP_COLORS[Object.keys(MP.players).length % MP_COLORS.length];
+                MP.players[conn.peer] = { name: d.name, color: color, x: 0, z: 6, ry: 0, xp: d.xp || 0, last: Date.now() };
+                conn.send({ t: 'welcome', color: color });
+                mpRenderRoom();
+            } else if (d.t === 'pos') {
+                const p = MP.players[conn.peer];
+                if (p) { p.x = d.x; p.z = d.z; p.ry = d.ry; p.xp = d.xp; p.last = Date.now(); }
+            } else if (d.t === 'chat') {
+                const p = MP.players[conn.peer];
+                const from = p ? p.name : 'Tamu';
+                appendChatMessage(from, String(d.text).replace(/</g, '&lt;'), 'text-sky-300');
+                mpShowRemoteBubble(conn.peer, d.text);
+                mpBroadcast({ t: 'chat', from: from, text: d.text, pid: conn.peer }, conn.peer);
+            } else if (d.t === 'emote') {
+                const p = MP.players[conn.peer];
+                mpShowRemoteBubble(conn.peer, d.e);
+                mpBroadcast({ t: 'emote', from: p ? p.name : 'Tamu', e: d.e, pid: conn.peer }, conn.peer);
+            }
+        }
+
+        function mpGuestOnData(d) {
+            if (d.t === 'welcome') { MP.myColor = d.color; }
+            else if (d.t === 'state') { mpSyncView(d.players); mpRenderRoom(); }
+            else if (d.t === 'chat') {
+                appendChatMessage(d.from, String(d.text).replace(/</g, '&lt;'), 'text-sky-300');
+                if (d.pid) mpShowRemoteBubble(d.pid, d.text);
+            }
+            else if (d.t === 'emote') {
+                if (d.pid) mpShowRemoteBubble(d.pid, d.e);
+            }
+        }
+
+        function mpBroadcast(msg, exceptPeer) {
+            Object.keys(MP.conns).forEach(function (pid) {
+                if (pid === exceptPeer) return;
+                try { MP.conns[pid].send(msg); } catch (e) {}
+            });
+        }
+
+        function mpSendPos() {
+            const payload = { x: +playerMesh.position.x.toFixed(2), z: +playerMesh.position.z.toFixed(2),
+                              ry: +playerMesh.rotation.y.toFixed(2), xp: mpTotalXP() };
+            if (MP.isHost) {
+                const snap = {};
+                snap[MP.peer.id] = { name: MP.name, color: MP.myColor, x: payload.x, z: payload.z, ry: payload.ry, xp: payload.xp };
+                const now = Date.now();
+                Object.keys(MP.players).forEach(function (pid) {
+                    const p = MP.players[pid];
+                    if (now - p.last < 10000) snap[pid] = { name: p.name, color: p.color, x: p.x, z: p.z, ry: p.ry, xp: p.xp };
+                });
+                mpBroadcast({ t: 'state', players: snap });
+                const list = Object.keys(snap).filter(function (k) { return k !== MP.peer.id; })
+                    .map(function (k) { return Object.assign({ id: k }, snap[k]); });
+                mpSyncView(list);
+            } else if (MP.hostConn && MP.hostConn.open) {
+                try { MP.hostConn.send(Object.assign({ t: 'pos', name: MP.name }, payload)); } catch (e) {}
+            }
+        }
+
+        function mpSyncView(list) {
+            const seen = {};
+            list.forEach(function (p) {
+                seen[p.id] = true;
+                let v = MP.view[p.id];
+                if (!v) {
+                    const mesh = createCharacterMesh(p.color, 0x64748b);
+                    mesh.position.set(p.x, 1.0, p.z);
+                    scene.add(mesh);
+                    const ui = createLabelUI(p.name, 'bg-sky-400');
+                    v = MP.view[p.id] = { mesh: mesh, ui: ui, name: p.name, tx: p.x, tz: p.z, try_: p.ry };
+                }
+                v.tx = p.x; v.tz = p.z; v.try_ = p.ry;
+            });
+            Object.keys(MP.view).forEach(function (pid) {
+                if (!seen[pid]) {
+                    scene.remove(MP.view[pid].mesh);
+                    MP.view[pid].ui.wrapper.remove();
+                    delete MP.view[pid];
+                }
+            });
+        }
+
+        function mpRemoveGuest(pid) {
+            delete MP.conns[pid];
+            delete MP.players[pid];
+            if (MP.view[pid]) {
+                scene.remove(MP.view[pid].mesh);
+                MP.view[pid].ui.wrapper.remove();
+                delete MP.view[pid];
+            }
+            mpRenderRoom();
+        }
+
+        function mpShowRemoteBubble(pid, text) {
+            const v = MP.view[pid];
+            if (v) showCharacterBubble(v.ui, String(text).slice(0, 80));
+        }
+
+        function mpSendChat(text) {
+            if (!MP.connected) return;
+            if (MP.isHost) {
+                mpBroadcast({ t: 'chat', from: MP.name, text: text, pid: MP.peer.id });
+            } else if (MP.hostConn && MP.hostConn.open) {
+                try { MP.hostConn.send({ t: 'chat', text: text }); } catch (e) {}
+            }
+        }
+
+        function mpEmote(e) {
+            showCharacterBubble(playerLabel, e);
+            if (!MP.connected) return;
+            if (MP.isHost) mpBroadcast({ t: 'emote', from: MP.name, e: e, pid: MP.peer.id });
+            else if (MP.hostConn && MP.hostConn.open) {
+                try { MP.hostConn.send({ t: 'emote', e: e }); } catch (e2) {}
+            }
+        }
+
+        function mpPrune() {
+            const now = Date.now();
+            Object.keys(MP.players).forEach(function (pid) {
+                if (now - MP.players[pid].last > 15000) mpRemoveGuest(pid);
+            });
+        }
+
+        function mpCleanupPeer() {
+            if (MP.peer) { try { MP.peer.destroy(); } catch (e) {} }
+            MP.peer = null; MP.hostConn = null; MP.conns = {};
+        }
+
+        function mpLeave(silent) {
+            mpCleanupPeer();
+            Object.keys(MP.view).forEach(function (pid) {
+                scene.remove(MP.view[pid].mesh);
+                MP.view[pid].ui.wrapper.remove();
+            });
+            MP.view = {}; MP.players = {};
+            MP.connected = false; MP.isHost = false; MP.code = null;
+            document.getElementById('mp-setup').classList.remove('hidden');
+            document.getElementById('mp-room').classList.add('hidden');
+            if (!silent) mpToast('Keluar dari room 👋');
+        }
+
+        function mpShowRoom() {
+            document.getElementById('mp-setup').classList.add('hidden');
+            document.getElementById('mp-room').classList.remove('hidden');
+            document.getElementById('mp-room-code').textContent = MP.code;
+            document.getElementById('mp-room-role').textContent = MP.isHost ? '👑 Host' : '🎮 Tamu';
+            mpRenderRoom();
+        }
+
+        function mpRenderRoom() {
+            if (!MP.connected) return;
+            const box = document.getElementById('mp-players');
+            // leaderboard: gabung semua (host lihat XP tamu, tamu lihat daftar nama)
+            const all = [{ name: MP.name + ' (kamu)', xp: mpTotalXP() }];
+            if (MP.isHost) {
+                Object.keys(MP.players).forEach(function (k) { all.push({ name: MP.players[k].name, xp: MP.players[k].xp }); });
+            } else {
+                Object.keys(MP.view).forEach(function (k) { all.push({ name: MP.view[k].name, xp: 0 }); });
+            }
+            all.sort(function (a, b) { return b.xp - a.xp; });
+            box.innerHTML = all.map(function (p, i) {
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
+                return '<div class="flex justify-between text-xs bg-slate-900/60 rounded-xl px-3 py-2">' +
+                    '<span>' + medal + ' ' + String(p.name).replace(/</g, '&lt;') + '</span>' +
+                    '<span class="font-bold text-amber-300">' + p.xp + ' XP</span></div>';
+            }).join('');
+            document.getElementById('mp-count').textContent = all.length + ' pemain';
+        }
+
+        /********************************************************************
+         * 2. INISIALISASI THREE.JS SCENE, KAMERA, DAN SISTEM FISIKA
+         ********************************************************************/
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x7dd3fc);
+        scene.fog = new THREE.FogExp2(0x7dd3fc, 0.012);
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // Cahaya Ambient & Matahari
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.DirectionalLight(0xfffbeb, 0.9);
+        sunLight.position.set(25, 40, 20);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 120;
+        const d = 35;
+        sunLight.shadow.camera.left = -d;
+        sunLight.shadow.camera.right = d;
+        sunLight.shadow.camera.top = d;
+        sunLight.shadow.camera.bottom = -d;
+        scene.add(sunLight);
+
+        // Cahaya hangat di sekitar api unggun
+        const fireLight = new THREE.PointLight(0xff7700, 1.8, 14);
+        fireLight.position.set(0, 2.2, 0);
+        scene.add(fireLight);
+
+        // Daftar Objek Fisika Dinamis (Kelapa jatuh memantul, Ikan lompat parabolik, Cipratan Air)
+        const physicsObjects = [];
+        const treeColliders = []; // Batang pohon memiliki benturan fisika
+
+        function spawnPhysicsItem(mesh, startPos, velocity, onFinish) {
+            mesh.position.copy(startPos);
+            scene.add(mesh);
+            physicsObjects.push({
+                mesh,
+                vel: velocity.clone(),
+                gravity: -0.016,
+                bounces: 0,
+                maxBounces: 2,
+                age: 0,
+                onFinish
+            });
+        }
+
+        /********************************************************************
+         * 3. MEMBANGUN PULAU 3D LOW-POLY & OBJEK FISIKA
+         ********************************************************************/
+        const interactables = [];
+
+        // 3.1 Lautan
+        const oceanGeo = new THREE.CylinderGeometry(90, 90, 2, 48);
+        const oceanMat = new THREE.MeshPhongMaterial({
+            color: 0x0284c7,
+            shininess: 80,
+            transparent: true,
+            opacity: 0.92,
+            flatShading: true
+        });
+        const ocean = new THREE.Mesh(oceanGeo, oceanMat);
+        ocean.position.y = -1.2;
+        scene.add(ocean);
+
+        // 3.2 Pasir Pantai
+        const sandGeo = new THREE.CylinderGeometry(24, 27, 2, 32);
+        const sandMat = new THREE.MeshLambertMaterial({ color: 0xfde68a, flatShading: true });
+        const sand = new THREE.Mesh(sandGeo, sandMat);
+        sand.position.y = -0.3;
+        sand.receiveShadow = true;
+        scene.add(sand);
+
+        // 3.3 Daratan Rumput Hijau
+        const grassGeo = new THREE.CylinderGeometry(19, 21, 1.6, 32);
+        const grassMat = new THREE.MeshLambertMaterial({ color: 0x34d399, flatShading: true });
+        const grass = new THREE.Mesh(grassGeo, grassMat);
+        grass.position.y = 0.2;
+        grass.receiveShadow = true;
+        scene.add(grass);
+
+        // 3.4 Plaza Lapangan Ngobrol & Api Unggun di Tengah
+        const plazaGeo = new THREE.CylinderGeometry(5.5, 5.8, 0.2, 24);
+        const plazaMat = new THREE.MeshLambertMaterial({ color: 0xd6d3d1, flatShading: true });
+        const plaza = new THREE.Mesh(plazaGeo, plazaMat);
+        plaza.position.set(0, 1.05, 0);
+        plaza.receiveShadow = true;
+        scene.add(plaza);
+
+        const campfireGroup = new THREE.Group();
+        campfireGroup.position.set(0, 1.15, 0);
+
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            const rock = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(0.32, 0),
+                new THREE.MeshLambertMaterial({ color: 0x78716c, flatShading: true })
+            );
+            rock.position.set(Math.cos(angle) * 1.1, 0.15, Math.sin(angle) * 1.1);
+            rock.castShadow = true;
+            campfireGroup.add(rock);
+        }
+
+        const logMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
+        for (let i = 0; i < 4; i++) {
+            const log = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.4, 6), logMat);
+            log.rotation.z = Math.PI / 2;
+            log.rotation.y = (i * Math.PI) / 4;
+            log.position.y = 0.15;
+            campfireGroup.add(log);
+        }
+
+        const flameGeo = new THREE.ConeGeometry(0.55, 1.3, 6);
+        const flameMat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
+        const flameMesh = new THREE.Mesh(flameGeo, flameMat);
+        flameMesh.position.y = 0.65;
+        campfireGroup.add(flameMesh);
+
+        // ---- Panci masak 3D di atas api (tripod bambu + uap panas) ----
+        const potGroup = new THREE.Group();
+        const potMat = new THREE.MeshLambertMaterial({ color: 0x3f3f46, flatShading: true });
+        const potBody = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.45, 0.6, 12), potMat);
+        potBody.position.y = 1.35;
+        potBody.castShadow = true;
+        potGroup.add(potBody);
+        const potLid = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 0.1, 12), potMat);
+        potLid.position.y = 1.7;
+        potGroup.add(potLid);
+        const potKnob = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8),
+            new THREE.MeshLambertMaterial({ color: 0x92400e, flatShading: true }));
+        potKnob.position.y = 1.8;
+        potGroup.add(potKnob);
+        for (const sx of [-1, 1]) { // gagang kiri-kanan
+            const handle = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.045, 6, 12, Math.PI), potMat);
+            handle.position.set(sx * 0.58, 1.45, 0);
+            handle.rotation.z = sx > 0 ? -Math.PI / 2 : Math.PI / 2;
+            potGroup.add(handle);
+        }
+        const stickMat = new THREE.MeshLambertMaterial({ color: 0xa16207, flatShading: true });
+        for (let i = 0; i < 3; i++) { // tripod bambu penyangga panci
+            const ang = (i / 3) * Math.PI * 2 + 0.5;
+            const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.6, 6), stickMat);
+            stick.position.set(Math.cos(ang) * 0.62, 1.05, Math.sin(ang) * 0.62);
+            stick.rotation.z = Math.cos(ang) * 0.42;
+            stick.rotation.x = -Math.sin(ang) * 0.42;
+            stick.castShadow = true;
+            potGroup.add(stick);
+        }
+        campfireGroup.add(potGroup);
+        // Uap panas dari panci
+        const steamPuffs = [];
+        for (let i = 0; i < 4; i++) {
+            const puff = new THREE.Mesh(
+                new THREE.SphereGeometry(0.16, 8, 8),
+                new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 })
+            );
+            puff.position.set((Math.random() - 0.5) * 0.4, 2.0 + i * 0.45, (Math.random() - 0.5) * 0.4);
+            puff.userData.phase = Math.random() * Math.PI * 2;
+            steamPuffs.push(puff);
+            campfireGroup.add(puff);
+        }
+
+        const benchMat = new THREE.MeshLambertMaterial({ color: 0x92400e });
+        for (let i = 0; i < 3; i++) {
+            const benchAngle = (i * (Math.PI * 2)) / 3 + 0.5;
+            const bench = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.35, 0.7), benchMat);
+            bench.position.set(Math.cos(benchAngle) * 3.6, 0.25, Math.sin(benchAngle) * 3.6);
+            bench.rotation.y = -benchAngle + Math.PI / 2;
+            bench.castShadow = true;
+            bench.receiveShadow = true;
+            campfireGroup.add(bench);
+        }
+
+        // ---- Partikel hujan (disembunyikan saat cerah) ----
+        const RAIN_N = 350;
+        const rainGeo = new THREE.BufferGeometry();
+        const rainPos = new Float32Array(RAIN_N * 3);
+        for (let i = 0; i < RAIN_N; i++) {
+            rainPos[i * 3] = (Math.random() - 0.5) * 44;
+            rainPos[i * 3 + 1] = Math.random() * 22;
+            rainPos[i * 3 + 2] = (Math.random() - 0.5) * 44;
+        }
+        rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+        const rain = new THREE.Points(rainGeo, new THREE.PointsMaterial({
+            color: 0x9ecfff, size: 0.14, transparent: true, opacity: 0.75
+        }));
+        rain.visible = false;
+        rain.frustumCulled = false;
+        scene.add(rain);
+
+        // ---- Lampu disko untuk mode joget ----
+        [0xff2d78, 0x2dff78, 0x2d7dff].forEach(function (c) {
+            const l = new THREE.PointLight(c, 0, 13);
+            scene.add(l);
+            discoLights.push(l);
+        });
+
+        scene.add(campfireGroup);
+        interactables.push({
+            type: 'campfire',
+            position: new THREE.Vector3(0, 1.15, 0),
+            radius: 3.5,
+            icon: '🍳',
+            prompt: 'Masak Hidangan Pulau (Tekan E)'
+        });
+
+        // ---- 3.4b Gua Misteri (timur pulau) ----
+        const caveGroup = new THREE.Group();
+        caveGroup.position.set(14, 1.0, -6);
+        const rockMat = new THREE.MeshLambertMaterial({ color: 0x57534e, flatShading: true });
+        for (const sx of [-1.6, 1.6]) {
+            const pillar = new THREE.Mesh(new THREE.DodecahedronGeometry(1.5, 0), rockMat);
+            pillar.position.set(sx, 1.2, 0);
+            pillar.castShadow = true;
+            caveGroup.add(pillar);
+        }
+        const lintel = new THREE.Mesh(new THREE.DodecahedronGeometry(1.9, 0), rockMat);
+        lintel.position.set(0, 3.0, 0);
+        lintel.scale.set(1.4, 0.8, 1);
+        lintel.castShadow = true;
+        caveGroup.add(lintel);
+        const caveMouth = new THREE.Mesh(
+            new THREE.PlaneGeometry(2.2, 2.6),
+            new THREE.MeshBasicMaterial({ color: 0x0c0a09 })
+        );
+        caveMouth.position.set(0, 1.3, 0.9);
+        caveGroup.add(caveMouth);
+        // kilau kristal di dalam gua
+        const caveGlow = new THREE.PointLight(0x67e8f9, 0.9, 8);
+        caveGlow.position.set(0, 1.5, 0);
+        caveGroup.add(caveGlow);
+        scene.add(caveGroup);
+        interactables.push({
+            type: 'cave',
+            position: new THREE.Vector3(14, 1.0, -6),
+            radius: 3.2,
+            icon: '⛏️',
+            prompt: 'Masuk Tambang Kristal (E)'
+        });
+
+        // ---- 3.4c Kepiting liar di pantai ----
+        function createCrabMesh() {
+            const g = new THREE.Group();
+            const mat = new THREE.MeshLambertMaterial({ color: 0xef4444, flatShading: true });
+            const body = new THREE.Mesh(new THREE.SphereGeometry(0.35, 10, 8), mat);
+            body.scale.set(1.25, 0.7, 1);
+            body.position.y = 0.32;
+            g.add(body);
+            for (const sx of [-1, 1]) {
+                const claw = new THREE.Mesh(new THREE.SphereGeometry(0.17, 8, 8), mat);
+                claw.position.set(sx * 0.5, 0.38, 0.38);
+                g.add(claw);
+                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6),
+                    new THREE.MeshBasicMaterial({ color: 0x0f172a }));
+                eye.position.set(sx * 0.13, 0.58, 0.3);
+                g.add(eye);
+                for (let i = 0; i < 3; i++) {
+                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.42, 6), mat);
+                    leg.position.set(sx * 0.48, 0.2, -0.22 + i * 0.22);
+                    leg.rotation.z = sx * 0.9;
+                    g.add(leg);
+                }
+            }
+            g.traverse(function (o) { if (o.isMesh) o.castShadow = true; });
+            return g;
+        }
+        const crabs = [];
+        function spawnCrab(crab) {
+            const ang = Math.random() * Math.PI * 2;
+            const rad = 15 + Math.random() * 5;
+            crab.mesh.position.set(Math.cos(ang) * rad, 0.95, Math.sin(ang) * rad);
+            crab.mesh.visible = true;
+            crab.caught = false;
+            crab.retarget = 0;
+            pickCrabTarget(crab);
+        }
+        function pickCrabTarget(crab) {
+            const ang = Math.random() * Math.PI * 2;
+            const rad = 15 + Math.random() * 5;
+            crab.tx = Math.cos(ang) * rad;
+            crab.tz = Math.sin(ang) * rad;
+            crab.retarget = 2 + Math.random() * 3;
+        }
+        for (let i = 0; i < 3; i++) {
+            const mesh = createCrabMesh();
+            scene.add(mesh);
+            const crab = { mesh: mesh, tx: 0, tz: 0, retarget: 0, caught: false };
+            spawnCrab(crab);
+            crabs.push(crab);
+            interactables.push({
+                type: 'crab',
+                position: mesh.position, // referensi live: ikut kepiting bergerak!
+                radius: 2.4,
+                icon: '🦀',
+                prompt: 'Tangkap Kepiting (E)',
+                crab: crab
+            });
+        }
+        function updateCrabs(dt) {
+            for (const crab of crabs) {
+                if (crab.caught || !crab.mesh.visible) continue;
+                const m = crab.mesh;
+                const dxP = playerMesh.position.x - m.position.x;
+                const dzP = playerMesh.position.z - m.position.z;
+                const distP = Math.hypot(dxP, dzP);
+                let speed = 1.1;
+                if (distP < 3.5 && !currentActivity) {
+                    // kabur dari pemain!
+                    crab.tx = m.position.x - dxP * 3;
+                    crab.tz = m.position.z - dzP * 3;
+                    const rr = Math.hypot(crab.tx, crab.tz);
+                    if (rr < 14 || rr > 21.5) pickCrabTarget(crab);
+                    speed = 3.2;
+                } else {
+                    crab.retarget -= dt;
+                    if (crab.retarget <= 0) pickCrabTarget(crab);
+                }
+                const dx = crab.tx - m.position.x;
+                const dz = crab.tz - m.position.z;
+                const d = Math.hypot(dx, dz);
+                if (d > 0.15) {
+                    m.position.x += (dx / d) * speed * dt;
+                    m.position.z += (dz / d) * speed * dt;
+                    m.rotation.y = Math.atan2(dx, dz);
+                    m.position.y = 0.95 + Math.abs(Math.sin(prevElapsed * 10 + m.position.x)) * 0.06;
+                }
+            }
+        }
+
+        // ---- 3.4d Tambang Kristal: open world baru di kejauhan ----
+        const MINE = { x: 60, z: 60, r: 12.5 };
+        const mineGround = new THREE.Mesh(
+            new THREE.CylinderGeometry(13, 14.5, 1.4, 20),
+            new THREE.MeshLambertMaterial({ color: 0x44403c, flatShading: true })
+        );
+        mineGround.position.set(MINE.x, 0.3, MINE.z);
+        mineGround.receiveShadow = true;
+        scene.add(mineGround);
+        // dinding batu melingkar
+        for (let i = 0; i < 10; i++) {
+            const ang = (i / 10) * Math.PI * 2;
+            const wall = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(2.4, 0),
+                new THREE.MeshLambertMaterial({ color: 0x292524, flatShading: true })
+            );
+            wall.position.set(MINE.x + Math.cos(ang) * 14, 1.8, MINE.z + Math.sin(ang) * 14);
+            wall.castShadow = true;
+            scene.add(wall);
+        }
+        // tiang penyangga kayu
+        const beamMat = new THREE.MeshLambertMaterial({ color: 0x78350f, flatShading: true });
+        for (let i = 0; i < 4; i++) {
+            const ang = (i / 4) * Math.PI * 2 + 0.4;
+            const beam = new THREE.Mesh(new THREE.BoxGeometry(0.35, 4.2, 0.35), beamMat);
+            beam.position.set(MINE.x + Math.cos(ang) * 10.5, 2.1, MINE.z + Math.sin(ang) * 10.5);
+            beam.castShadow = true;
+            scene.add(beam);
+            const beamTop = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.35, 0.35), beamMat);
+            beamTop.position.set(MINE.x + Math.cos(ang) * 10.5, 4.1, MINE.z + Math.sin(ang) * 10.5);
+            beamTop.rotation.y = -ang;
+            scene.add(beamTop);
+        }
+        // obor penerang
+        for (let i = 0; i < 4; i++) {
+            const ang = (i / 4) * Math.PI * 2;
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.2, 6), beamMat);
+            pole.position.set(MINE.x + Math.cos(ang) * 5, 2.0, MINE.z + Math.sin(ang) * 5);
+            scene.add(pole);
+            const torch = new THREE.PointLight(0xff9a3c, 1.4, 12);
+            torch.position.set(MINE.x + Math.cos(ang) * 5, 3.3, MINE.z + Math.sin(ang) * 5);
+            scene.add(torch);
+        }
+        // 6 batu tambang
+        const mineRocks = [];
+        for (let i = 0; i < 6; i++) {
+            const ang = (i / 6) * Math.PI * 2 + 0.3;
+            const rock = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(0.95, 0),
+                new THREE.MeshLambertMaterial({ color: 0x78716c, flatShading: true })
+            );
+            rock.position.set(MINE.x + Math.cos(ang) * 7, 1.6, MINE.z + Math.sin(ang) * 7);
+            rock.castShadow = true;
+            scene.add(rock);
+            // kilau kristal kecil menempel
+            const glint = new THREE.Mesh(
+                new THREE.OctahedronGeometry(0.22, 0),
+                new THREE.MeshBasicMaterial({ color: 0x67e8f9 })
+            );
+            glint.position.set(0.4, 0.55, 0.3);
+            rock.add(glint);
+            const rec = { mesh: rock, alive: true };
+            mineRocks.push(rec);
+            interactables.push({
+                type: 'rock',
+                position: rock.position,
+                radius: 2.8,
+                icon: '⛏️',
+                prompt: 'Tambang Batu (E)',
+                rock: rec
+            });
+        }
+        // pintu keluar tambang
+        const mineExitRing = new THREE.Mesh(
+            new THREE.TorusGeometry(1.2, 0.12, 8, 24),
+            new THREE.MeshBasicMaterial({ color: 0x34d399 })
+        );
+        mineExitRing.position.set(MINE.x, 2.2, MINE.z + 10.5);
+        scene.add(mineExitRing);
+        interactables.push({
+            type: 'mine_exit',
+            position: new THREE.Vector3(MINE.x, 1.0, MINE.z + 10.5),
+            radius: 3.0,
+            icon: '🚪',
+            prompt: 'Keluar dari Tambang (E)'
+        });
+
+        // ---- 3.5b Dermaga Ujung: spot mancing ikan emas (barat) ----
+        const goldDock = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.3, 4),
+            new THREE.MeshLambertMaterial({ color: 0xa16207 }));
+        goldDock.position.set(-10, 0.6, 22);
+        goldDock.castShadow = true;
+        goldDock.receiveShadow = true;
+        scene.add(goldDock);
+        const goldRing = new THREE.Mesh(
+            new THREE.TorusGeometry(1.1, 0.09, 8, 24),
+            new THREE.MeshBasicMaterial({ color: 0xfbbf24 })
+        );
+        goldRing.rotation.x = Math.PI / 2;
+        goldRing.position.set(-10, 0.85, 22);
+        scene.add(goldRing);
+        const goldLantern = new THREE.PointLight(0xfbbf24, 0.8, 7);
+        goldLantern.position.set(-10, 2.2, 22);
+        scene.add(goldLantern);
+        interactables.push({
+            type: 'fishing_gold',
+            position: new THREE.Vector3(-10, 0.6, 22),
+            radius: 3.0,
+            icon: '🌟',
+            prompt: 'Mancing Ikan Emas (E)'
+        });
+
+        // 3.5 Dermaga Kayu, Pelampung Kail Fisika & Spot Mancing
+        const dockGroup = new THREE.Group();
+        const woodDockMat = new THREE.MeshLambertMaterial({ color: 0xa16207 });
+        const dockPlank = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.3, 10), woodDockMat);
+        dockPlank.position.set(0, 0.6, 22);
+        dockPlank.castShadow = true;
+        dockPlank.receiveShadow = true;
+        dockGroup.add(dockPlank);
+
+        [[-1.3, 18], [1.3, 18], [-1.3, 22], [1.3, 22], [-1.3, 26], [1.3, 26]].forEach(([px, pz]) => {
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 3, 8), woodDockMat);
+            pole.position.set(px, 0, pz);
+            dockGroup.add(pole);
+        });
+
+        const floatRing = new THREE.Mesh(
+            new THREE.TorusGeometry(0.9, 0.12, 8, 20),
+            new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+        );
+        floatRing.rotation.x = Math.PI / 2;
+        floatRing.position.set(0, -0.1, 29.5);
+        dockGroup.add(floatRing);
+
+        // Pelampung Kail Pancing (Bobber) Fisika + Tali Pancing
+        const bobberMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(0.2, 10, 10),
+            new THREE.MeshLambertMaterial({ color: 0xef4444 })
+        );
+        bobberMesh.visible = false;
+        scene.add(bobberMesh);
+
+        const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+        const fishingLine = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xffffff }));
+        fishingLine.visible = false;
+        scene.add(fishingLine);
+
+        scene.add(dockGroup);
+        interactables.push({
+            type: 'fishing',
+            position: new THREE.Vector3(0, 1.0, 25.5),
+            radius: 3.5,
+            icon: '🎣',
+            prompt: 'Lempar Kail Pancing (Tekan E)'
+        });
+
+        // 3.6 Fungsi Pembuat Pohon Kelapa (Dengan Batang & Buah Kelapa yang Bisa Dipetik)
+        function createCoconutTree(x, z) {
+            const treeGroup = new THREE.Group();
+            treeGroup.position.set(x, 1.0, z);
+
+            const trunkMat = new THREE.MeshLambertMaterial({ color: 0x854d0e, flatShading: true });
+            let curY = 0;
+            let offsetX = 0;
+            for (let i = 0; i < 5; i++) {
+                const seg = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.35 - i * 0.04, 0.42 - i * 0.04, 1.2, 7),
+                    trunkMat
+                );
+                seg.position.set(offsetX, curY + 0.6, 0);
+                seg.rotation.z = -i * 0.04;
+                seg.castShadow = true;
+                treeGroup.add(seg);
+                curY += 1.1;
+                offsetX += i * 0.06;
+            }
+
+            const leafMat = new THREE.MeshLambertMaterial({ color: 0x16a34a, flatShading: true });
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2;
+                const leaf = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.12, 0.65), leafMat);
+                leaf.position.set(offsetX + Math.cos(angle) * 1.2, curY, Math.sin(angle) * 1.2);
+                leaf.rotation.y = -angle;
+                leaf.rotation.z = -0.35;
+                leaf.castShadow = true;
+                treeGroup.add(leaf);
+            }
+
+            const cocoMat = new THREE.MeshLambertMaterial({ color: 0x451a03 });
+            const coconuts = [];
+            for (let i = 0; i < 3; i++) {
+                const coco = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 8), cocoMat);
+                const a = (i / 3) * Math.PI * 2;
+                coco.position.set(offsetX + Math.cos(a) * 0.38, curY - 0.25, Math.sin(a) * 0.38);
+                treeGroup.add(coco);
+                coconuts.push(coco);
+            }
+
+            scene.add(treeGroup);
+            treeColliders.push({ x, z, radius: 0.65 });
+
+            interactables.push({
+                type: 'tree',
+                position: new THREE.Vector3(x, 1.0, z),
+                topY: curY,
+                topOffsetX: offsetX,
+                radius: 2.6,
+                coconuts: coconuts,
+                icon: '🌴',
+                prompt: 'Panjat & Petik Kelapa (Tekan E)'
+            });
+        }
+
+        createCoconutTree(11, -6);
+        createCoconutTree(13, 5);
+        createCoconutTree(-12, -7);
+        createCoconutTree(-10, 8);
+        createCoconutTree(4, -13);
+
+        for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2 + 0.3;
+            const dist = 15 + (i % 2) * 3;
+            const rx = Math.cos(angle) * dist;
+            const rz = Math.sin(angle) * dist;
+            if (rz > 16 && Math.abs(rx) < 4) continue;
+
+            const bush = new THREE.Mesh(
+                new THREE.DodecahedronGeometry(0.7, 1),
+                new THREE.MeshLambertMaterial({ color: 0x059669, flatShading: true })
+            );
+            bush.position.set(rx, 1.2, rz);
+            bush.castShadow = true;
+            scene.add(bush);
+            treeColliders.push({ x: rx, z: rz, radius: 0.7 });
+        }
+
+        /********************************************************************
+         * 4. PEMBUATAN KARAKTER AVATAR DENGAN TANGAN KIRI & KANAN TERLIHAT JELAS
+         ********************************************************************/
+        const labelsContainer = document.getElementById('labels-container');
+
+        function createCharacterMesh(bodyColor, hatColor) {
+            const group = new THREE.Group();
+
+            // Badan Kapsul
+            const body = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.42, 0.48, 1.1, 12),
+                new THREE.MeshLambertMaterial({ color: bodyColor, flatShading: true })
+            );
+            body.position.y = 0.55;
+            body.castShadow = true;
+            group.add(body);
+
+            // Kepala
+            const head = new THREE.Mesh(
+                new THREE.SphereGeometry(0.42, 14, 14),
+                new THREE.MeshLambertMaterial({ color: 0xfde047 })
+            );
+            head.position.y = 1.4;
+            head.castShadow = true;
+            group.add(head);
+
+            // Mata
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+            const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), eyeMat);
+            eyeL.position.set(-0.14, 1.45, 0.36);
+            const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), eyeMat);
+            eyeR.position.set(0.14, 1.45, 0.36);
+            group.add(eyeL, eyeR);
+
+            // Topi Petualang
+            const hatBrim = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.6, 0.6, 0.08, 12),
+                new THREE.MeshLambertMaterial({ color: hatColor })
+            );
+            hatBrim.position.y = 1.72;
+            const hatTop = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.32, 0.4, 0.3, 12),
+                new THREE.MeshLambertMaterial({ color: hatColor })
+            );
+            hatTop.position.y = 1.88;
+            group.add(hatBrim, hatTop);
+
+            // ENGSEL BAHU KIRI + LENGAN + TELAPak TANGAN KUNING (Terlihat jelas saat memanjat & memetik)
+            const leftArmPivot = new THREE.Group();
+            leftArmPivot.position.set(-0.52, 1.05, 0);
+            const leftArmMesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.11, 0.11, 0.55, 8),
+                new THREE.MeshLambertMaterial({ color: bodyColor })
+            );
+            leftArmMesh.position.y = -0.25;
+            const leftHand = new THREE.Mesh(
+                new THREE.SphereGeometry(0.15, 10, 10),
+                new THREE.MeshLambertMaterial({ color: 0xfde047 })
+            );
+            leftHand.position.y = -0.55;
+            leftArmPivot.add(leftArmMesh, leftHand);
+            group.add(leftArmPivot);
+
+            // ENGSEL BAHU KANAN + LENGAN + TELAPAK TANGAN KUNING + KELAPA DI TANGAN
+            const rightArmPivot = new THREE.Group();
+            rightArmPivot.position.set(0.52, 1.05, 0);
+            const rightArmMesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.11, 0.11, 0.55, 8),
+                new THREE.MeshLambertMaterial({ color: bodyColor })
+            );
+            rightArmMesh.position.y = -0.25;
+            const rightHand = new THREE.Mesh(
+                new THREE.SphereGeometry(0.15, 10, 10),
+                new THREE.MeshLambertMaterial({ color: 0xfde047 })
+            );
+            rightHand.position.y = -0.55;
+
+            // Buah kelapa yang dipegang di telapak tangan kanan saat memetik di atas pohon
+            const heldCoconut = new THREE.Mesh(
+                new THREE.SphereGeometry(0.22, 8, 8),
+                new THREE.MeshLambertMaterial({ color: 0x451a03 })
+            );
+            heldCoconut.position.set(0, -0.75, 0.12);
+            heldCoconut.visible = false;
+
+            rightArmPivot.add(rightArmMesh, rightHand, heldCoconut);
+            group.add(rightArmPivot);
+
+            // Joran Pancing
+            const rod = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.02, 0.04, 2.8, 6),
+                new THREE.MeshLambertMaterial({ color: 0xd97706 })
+            );
+            rod.position.set(0.55, 1.3, 1.2);
+            rod.rotation.x = Math.PI / 3;
+            rod.visible = false;
+            group.add(rod);
+
+            group.userData = { leftArmPivot, rightArmPivot, rightHand, heldCoconut, rod };
+            return group;
+        }
+
+        function createLabelUI(name, badgeColor = 'bg-emerald-500') {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'absolute top-0 left-0 -translate-x-1/2 -translate-y-full pointer-events-none flex flex-col items-center';
+            wrapper.style.transition = 'opacity 0.35s';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'mb-1.5 px-3 py-1 rounded-2xl bg-white text-slate-900 font-bold text-xs shadow-lg hidden max-w-[220px] text-center break-words border-2 border-emerald-400';
+            wrapper.appendChild(bubble);
+
+            const nameTag = document.createElement('div');
+            nameTag.className = 'px-2 py-0.5 rounded-full bg-slate-900/75 text-white font-semibold text-[10px] border border-white/20 flex items-center gap-1 shadow relative whitespace-nowrap';
+            nameTag.innerHTML = `
+                <span class="w-2 h-2 rounded-full ${badgeColor}"></span>
+                <span>${name}</span>
+                <span class="voice-icon hidden text-emerald-400 text-xs animate-bounce">🔊</span>
+            `;
+            wrapper.appendChild(nameTag);
+
+            labelsContainer.appendChild(wrapper);
+            const voiceIcon = nameTag.querySelector('.voice-icon');
+            return { wrapper, bubble, voiceIcon };
+        }
+
+        // Karakter Pemain Utama & Fisika Lompatan/Gravitasi
+        const playerMesh = createCharacterMesh(0x10b981, 0xf59e0b);
+        playerMesh.position.set(0, 1.0, 6);
+        scene.add(playerMesh);
+        const playerLabel = createLabelUI(playerState.username, 'bg-emerald-400');
+
+        const playerPhysics = {
+            vy: 0,
+            isGrounded: true,
+            gravity: -0.018,
+            jumpStrength: 0.32
+        };
+
+        // Buat 3 NPC Anggota Komunitas
+        const npcs = [
+            { name: 'Budi_Dev', color: 0xf59e0b, hat: 0x3b82f6, x: -3.2, z: -1.8, rot: 1.1, chats: ['Seru banget mancing pakai bar ketegangan!', 'Kalau bar hijau langsung sentak jorannya!', 'Save ke GitHub lancar jaya!'] },
+            { name: 'Siti_Art', color: 0xec4899, hat: 0xfbbf24, x: 3.3, z: -1.5, rot: -1.2, chats: ['Tangan karakternya kelihatan jelas pas metik kelapa 🥥', 'Enak banget ngadem di dalam tenda kemah!', 'Coba ngomong pakai tombol Mic 🎙️'] },
+            { name: 'Rama_JS', color: 0x38bdf8, hat: 0x10b981, x: -1.5, z: 3.4, rot: 2.5, chats: ['Tadi ikannya lepas gara-gara telat tarik kail 😅', 'Ayo lompat-lompat bareng tekan Spasi!', 'Suara voice chat jernih banget!'] }
+        ];
+
+        const npcObjects = npcs.map(data => {
+            const mesh = createCharacterMesh(data.color, data.hat);
+            mesh.position.set(data.x, 1.0, data.z);
+            mesh.rotation.y = data.rot;
+            scene.add(mesh);
+            const ui = createLabelUI(data.name, 'bg-sky-400');
+            return { ...data, mesh, ui, bubbleTimer: null };
+        });
+
+        function showCharacterBubble(uiObj, text) {
+            uiObj.bubble.textContent = text;
+            uiObj.bubble.classList.remove('hidden');
+            if (uiObj.timer) clearTimeout(uiObj.timer);
+            uiObj.timer = setTimeout(() => {
+                uiObj.bubble.classList.add('hidden');
+            }, 4500);
+        }
+
+        setInterval(() => {
+            if (worldIsNight()) return; // NPC tidur saat malam
+            const randomNPC = npcObjects[Math.floor(Math.random() * npcObjects.length)];
+            const msg = randomNPC.chats[Math.floor(Math.random() * randomNPC.chats.length)];
+            showCharacterBubble(randomNPC.ui, msg);
+        }, 7500);
+
+        /********************************************************************
+         * 5. FITUR PASANG KEMAH & MASUK KE DALAM TENDA KEMAH
+         ********************************************************************/
+        let playerTentMesh = null;
+        let tentInteractable = null;
+        let isInsideTent = false;
+
+        function buildOrMoveTent() {
+            if (isInsideTent) {
+                showToast('⛺', 'Keluar dari tenda terlebih dahulu untuk memindahkan kemah!');
+                return;
+            }
+            if (playerState.inventory.wood < 1 && !playerTentMesh) {
+                showToast('🪵', 'Butuh minimal 1 Kayu Bakar untuk mendirikan tenda!');
+                return;
+            }
+            const distFromCenter = Math.hypot(playerMesh.position.x, playerMesh.position.z);
+            if (distFromCenter > 21) {
+                showToast('🌊', 'Tidak bisa mendirikan tenda di air laut!');
+                return;
+            }
+
+            if (!playerTentMesh) {
+                playerState.inventory.wood -= 1;
+                updateHUD();
+
+                const tentGroup = new THREE.Group();
+
+                // Dinding Tenda Kerucut
+                const tentGeo = new THREE.ConeGeometry(2.1, 2.6, 4);
+                const tentMat = new THREE.MeshLambertMaterial({
+                    color: 0xf43f5e,
+                    flatShading: true,
+                    transparent: true,
+                    opacity: 1.0
+                });
+                const tent = new THREE.Mesh(tentGeo, tentMat);
+                tent.position.y = 1.3;
+                tent.rotation.y = Math.PI / 4;
+                tent.castShadow = true;
+                tentGroup.add(tent);
+
+                // Pintu Masuk Gelap di Sisi Depan Tenda
+                const doorMesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.95, 1.35, 0.2),
+                    new THREE.MeshBasicMaterial({ color: 0x1e293b })
+                );
+                doorMesh.position.set(0, 0.68, 1.02);
+                tentGroup.add(doorMesh);
+
+                // Karpet Tidur & Lampu Lentera Hangat di Dalam Tenda
+                const matMesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.3, 0.1, 1.6),
+                    new THREE.MeshLambertMaterial({ color: 0x38bdf8 })
+                );
+                matMesh.position.set(0, 0.08, 0);
+                tentGroup.add(matMesh);
+
+                const tentLight = new THREE.PointLight(0xfbbf24, 1.2, 6);
+                tentLight.position.set(0, 1.4, 0);
+                tentGroup.add(tentLight);
+
+                // Bendera kecil di puncak tenda
+                const flag = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.45, 0.25, 0.05),
+                    new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+                );
+                flag.position.set(0.18, 2.65, 0);
+                tentGroup.add(flag);
+
+                tentGroup.userData = { tentWall: tent };
+                playerTentMesh = tentGroup;
+                scene.add(playerTentMesh);
+
+                tentInteractable = {
+                    type: 'tent',
+                    position: new THREE.Vector3(),
+                    radius: 3.0,
+                    icon: '⛺',
+                    prompt: 'Masuk ke Dalam Kemah (Tekan E)'
+                };
+                interactables.push(tentInteractable);
+            }
+
+            const tentX = playerMesh.position.x + Math.sin(playerMesh.rotation.y) * 2.8;
+            const tentZ = playerMesh.position.z + Math.cos(playerMesh.rotation.y) * 2.8;
+            playerTentMesh.position.set(tentX, 1.0, tentZ);
+            tentInteractable.position.set(tentX, 1.0, tentZ);
+            playerState.campPosition = { x: Number(tentX.toFixed(2)), z: Number(tentZ.toFixed(2)) };
+
+            playSFX('success');
+            showToast('⛺', 'Tenda berdiri! Dekati tenda dan tekan E untuk masuk ke dalam.');
+            showCharacterBubble(playerLabel, 'Tenda kemah siap dimasuki! ⛺');
+        }
+
+        function toggleEnterTent() {
+            if (!playerTentMesh) return;
+            const tentOverlay = document.getElementById('tent-overlay');
+
+            if (!isInsideTent) {
+                isInsideTent = true;
+                setActivity('camping');
+                // Pindahkan karakter masuk ke tengah tenda dan buat dinding tenda semi-transparan agar terlihat nyaman di dalam
+                playerMesh.position.set(playerTentMesh.position.x, 1.0, playerTentMesh.position.z);
+                playerMesh.rotation.y = 0;
+                playerTentMesh.userData.tentWall.material.opacity = 0.38;
+                tentOverlay.classList.remove('hidden');
+                showCharacterBubble(playerLabel, '😌 Rebahan santai di dalam kemah...');
+                showToast('⛺', 'Kamu masuk ke dalam tenda kemah.');
+            } else {
+                isInsideTent = false;
+                clearActivity();
+                playerMesh.position.set(playerTentMesh.position.x, 1.0, playerTentMesh.position.z + 2.2);
+                playerTentMesh.userData.tentWall.material.opacity = 1.0;
+                tentOverlay.classList.add('hidden');
+                showCharacterBubble(playerLabel, 'Segar kembali habis istirahat di tenda! ✨');
+                showToast('🏕️', 'Kamu keluar dari tenda kemah.');
+            }
+        }
+
+        document.getElementById('btn-build-tent').addEventListener('click', buildOrMoveTent);
+        document.getElementById('btn-exit-tent').addEventListener('click', toggleEnterTent);
+
+        // Bongkar kemah: hapus tenda & kembalikan 1 kayu
+        function dismantleTent() {
+            if (!playerTentMesh) {
+                showToast('⛺', 'Belum ada tenda yang didirikan.');
+                return;
+            }
+            if (isInsideTent) toggleEnterTent(); // keluar dulu
+            scene.remove(playerTentMesh);
+            const idx = interactables.indexOf(tentInteractable);
+            if (idx >= 0) interactables.splice(idx, 1);
+            playerTentMesh = null;
+            tentInteractable = null;
+            playerState.inventory.wood += 1;
+            updateHUD();
+            playSFX('success');
+            showToast('⛺', 'Tenda dibongkar! +1 Kayu Bakar 🪵');
+            saveGame(true);
+        }
+        document.getElementById('btn-dismantle-tent').addEventListener('click', dismantleTent);
+
+        /********************************************************************
+         * 6. KONTROL GERAK, LOMPAT FISIKA, MINIGAME MANCING & PANJAT POHON
+         ********************************************************************/
+        // ===== INPUT ANTI-NYANGKUT v3: heartbeat + :active =====
+        const Input = {
+            _kt: { up: 0, down: 0, left: 0, right: 0 }, // timestamp keydown terakhir
+            _btn: {},
+            init() {
+                ['up', 'down', 'left', 'right'].forEach(d => {
+                    this._btn[d] = document.querySelector('.dpad-btn[data-dir="' + d + '"]');
+                });
+                // Aktifkan :active di iOS Safari
+                document.addEventListener('touchstart', function () {}, { passive: true });
+                document.querySelectorAll('.dpad-btn').forEach(b =>
+                    b.addEventListener('contextmenu', e => e.preventDefault()));
+            },
+            keyDown(d) { this._kt[d] = performance.now(); },
+            keyUp(d) { this._kt[d] = 0; },
+            reset() { this._kt.up = this._kt.down = this._kt.left = this._kt.right = 0; },
+            pressed(d) {
+                if (performance.now() - this._kt[d] < 800) return true;
+                const b = this._btn[d];
+                try { return !!(b && b.matches(':active')); } catch (e) { return false; }
+            }
+        };
+        // BUGFIX: reset semua tombol jalan — mencegah karakter "jalan sendiri"
+        // saat flag tombol nyangkut (touchcancel / Alt+Tab / modal minigame).
+        function resetKeys() { Input.reset(); }
+
+        // ===== TAHAP 1: STATE MACHINE AKTIVITAS =====
+        // Semua perubahan aktivitas WAJIB lewat sini. Menjamin:
+        //  1) aktivitas saling eksklusif (tidak bisa mancing sambil manjat),
+        //  2) tombol jalan selalu dilepas saat ganti aktivitas (anti "jalan sendiri").
+        function setActivity(name) {
+            // AUDIT: keluar dari joget (mis. joget -> mancing) wajib bersihkan musik & pose,
+            // kalau tidak musik nyala selamanya & badan miring permanen.
+            if (currentActivity === 'dancing' && name !== 'dancing') danceCleanup();
+            resetKeys();
+            currentActivity = name;
+        }
+        function clearActivity() {
+            if (currentActivity === 'dancing') danceCleanup();
+            currentActivity = null;
+            resetKeys();
+        }
+        function tryStartActivity(name) {
+            // Dancing boleh diinterupsi aktivitas lain
+            if (currentActivity && currentActivity !== 'dancing') return false;
+            setActivity(name);
+            return true;
+        }
+        let cameraAngle = 0;
+        let cameraPitch = 0.45;
+        let isDraggingCamera = false;
+        let prevMouseX = 0;
+        let prevMouseY = 0;
+
+        let currentActivity = null; // 'fishing_wait' | 'fishing_minigame' | 'climbing' | 'cooking' | 'dancing' | 'camping'
+        let activeTarget = null;
+        let lastTentXPTick = 0; // pencatat XP skill Kemah
+
+        // ===== TAHAP 4: DUNIA HIDUP (siang/malam + cuaca) =====
+        const WORLD = {
+            time: 9,              // jam dunia (0-24), mulai pagi
+            weather: 'cerah',     // 'cerah' | 'hujan' | 'angin'
+            weatherTimer: 60,     // detik sampai cuaca berubah
+            wasNight: false,
+        };
+        const SKY_DAY = new THREE.Color(0x7dd3fc);
+        const SKY_NIGHT = new THREE.Color(0x0b1026);
+        const SKY_DAWN = new THREE.Color(0xfb923c);
+        const _skyTmp = new THREE.Color();
+        let prevElapsed = 0;
+
+        function worldDayFactor() {
+            // 1 = siang penuh, 0 = malam penuh; transisi halus saat fajar/senja
+            const t = WORLD.time % 24;
+            const sunA = ((t - 6) / 12) * Math.PI; // 6: terbit, 18: terbenam
+            const elev = Math.sin(sunA);
+            return Math.max(0, Math.min(1, (elev + 0.18) / 0.36));
+        }
+        function worldIsNight() { const t = WORLD.time % 24; return t < 5 || t >= 19; }
+
+        function updateDayNight(dt) {
+            WORLD.time = (WORLD.time + dt / 10) % 24; // 10 detik real = 1 jam game
+            const df = worldDayFactor();
+            const t = WORLD.time % 24;
+            const sunA = ((t - 6) / 12) * Math.PI;
+            sunLight.position.set(Math.cos(sunA) * 40, Math.max(4, Math.sin(sunA) * 40), 20);
+            sunLight.intensity = 0.06 + df * 0.9;
+            // warna matahari: oranye saat fajar/senja
+            if (df > 0.15 && df < 0.75) sunLight.color.setHex(0xffb347);
+            else sunLight.color.setHex(0xfffbeb);
+            ambientLight.intensity = 0.14 + df * 0.52;
+            // langit: malam -> fajar -> siang
+            if (df <= 0) _skyTmp.copy(SKY_NIGHT);
+            else if (df < 0.4) _skyTmp.copy(SKY_NIGHT).lerp(SKY_DAWN, df / 0.4);
+            else _skyTmp.copy(SKY_DAWN).lerp(SKY_DAY, (df - 0.4) / 0.6);
+            if (WORLD.weather === 'hujan') _skyTmp.multiplyScalar(0.55);
+            scene.background.copy(_skyTmp);
+            scene.fog.color.copy(_skyTmp);
+            // api unggun lebih penting saat malam
+            fireLight.intensity = (1.6 + Math.sin(prevElapsed * 14) * 0.3) * (1 + (1 - df) * 1.4);
+            // NPC tidur saat malam tiba / bangun saat pagi
+            const night = worldIsNight();
+            if (night !== WORLD.wasNight) {
+                WORLD.wasNight = night;
+                npcObjects.forEach(function (npc) {
+                    showCharacterBubble(npc.ui, night ? '💤💤' : '☀️ Pagi!');
+                });
+                showToast(night ? '🌙' : '☀️', night ? 'Malam tiba... NPC beristirahat.' : 'Pagi tiba di pulau!');
+            }
+        }
+
+        function rollWeather() {
+            const r = Math.random();
+            WORLD.weather = r < 0.6 ? 'cerah' : r < 0.82 ? 'hujan' : 'angin';
+            WORLD.weatherTimer = 50 + Math.random() * 50;
+            updateWeatherUI();
+            if (WORLD.weather === 'hujan') { showToast('🌧️', 'Hujan turun! Ikan lebih cepat menyambar.'); playSFX('splash'); }
+            else if (WORLD.weather === 'angin') showToast('💨', 'Angin kencang! Memanjat jadi lebih lambat.');
+            else showToast('☀️', 'Cuaca cerah kembali.');
+        }
+        function updateWeatherUI() {
+            const wEl = document.getElementById('hud-weather');
+            if (wEl) wEl.textContent = WORLD.weather === 'hujan' ? '🌧️' : WORLD.weather === 'angin' ? '💨' : '☀️';
+            if (typeof rain !== 'undefined' && rain) rain.visible = (WORLD.weather === 'hujan');
+        }
+
+        // Variabel Minigame Mancing (Bisa dapat ikan atau gagal/lepas)
+        let fishingGame = {
+            active: false,
+            cursorPos: 0,
+            cursorDir: 1,
+            speed: 1.4,
+            targetStart: 32,
+            targetWidth: 28,
+            waitTimer: null
+        };
+
+        function triggerJump() {
+            if (isInsideTent || (currentActivity && currentActivity !== 'dancing')) return;
+            if (playerPhysics.isGrounded) {
+                playerPhysics.vy = playerPhysics.jumpStrength;
+                playerPhysics.isGrounded = false;
+                playSFX('jump');
+            }
+        }
+
+        document.getElementById('btn-jump').addEventListener('click', triggerJump);
+
+        window.addEventListener('keydown', (e) => {
+            if (document.activeElement === document.getElementById('chat-input')) return;
+            // Modal terbuka = fokus ke modal, tombol game diabaikan (Esc menutup)
+            if (anyModalOpen()) {
+                if (e.key === 'Escape') {
+                    ['github-modal', 'recipe-modal', 'mission-modal', 'shop-modal'].forEach(closeModal);
+                }
+                return;
+            }
+            const k = e.key.toLowerCase();
+
+            // Jika sedang minigame mancing, Spasi atau E menyentak kail!
+            if (currentActivity === 'fishing_minigame' && (e.code === 'Space' || k === 'e')) {
+                e.preventDefault();
+                resolveFishingPull();
+                return;
+            }
+
+            // Saat minigame mancing aktif, tombol jalan diabaikan (input milik minigame)
+            if (currentActivity !== 'fishing_minigame') {
+                if (k === 'w' || e.key === 'ArrowUp') Input.keyDown('up');
+                if (k === 's' || e.key === 'ArrowDown') Input.keyDown('down');
+                if (k === 'a' || e.key === 'ArrowLeft') Input.keyDown('left');
+                if (k === 'd' || e.key === 'ArrowRight') Input.keyDown('right');
+            }
+            if (e.code === 'Space') {
+                e.preventDefault();
+                triggerJump();
+            }
+            if (k === 'e') {
+                if (isInsideTent) {
+                    toggleEnterTent();
+                } else {
+                    triggerInteraction();
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'w' || e.key === 'ArrowUp') Input.keyUp('up');
+            if (k === 's' || e.key === 'ArrowDown') Input.keyUp('down');
+            if (k === 'a' || e.key === 'ArrowLeft') Input.keyUp('left');
+            if (k === 'd' || e.key === 'ArrowRight') Input.keyUp('right');
+        });
+
+        // INPUT v3: dpad dibaca dari :active browser (Input.init) — tanpa boolean flag.
+        Input.init();
+
+        // Jika window kehilangan fokus (Alt+Tab), lepas semua tombol jalan
+        window.addEventListener('blur', resetKeys);
+
+        renderer.domElement.addEventListener('mousedown', (e) => {
+            isDraggingCamera = true;
+            prevMouseX = e.clientX;
+            prevMouseY = e.clientY;
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!isDraggingCamera) return;
+            const dx = e.clientX - prevMouseX;
+            const dy = e.clientY - prevMouseY;
+            cameraAngle -= dx * 0.007;
+            cameraPitch = Math.max(0.18, Math.min(1.1, cameraPitch + dy * 0.005));
+            prevMouseX = e.clientX;
+            prevMouseY = e.clientY;
+        });
+        window.addEventListener('mouseup', () => { isDraggingCamera = false; });
+
+        // Emote Sapa & Joget
+        document.getElementById('btn-wave').addEventListener('click', () => {
+            if (currentActivity && currentActivity !== 'dancing') return;
+            showCharacterBubble(playerLabel, 'Halo teman-teman! 👋');
+            playerMesh.userData.rightArmPivot.rotation.z = Math.PI * 0.78;
+            setTimeout(() => { playerMesh.userData.rightArmPivot.rotation.z = 0; }, 1200);
+        });
+
+        // Sembunyikan / tampilkan HUD (panel atas + chat) agar pemandangan lega
+        let hudVisible = true;
+        document.getElementById('btn-hud-toggle').addEventListener('click', () => {
+            hudVisible = !hudVisible;
+            document.querySelectorAll('.hud-hideable').forEach(el => {
+                el.style.display = hudVisible ? '' : 'none';
+            });
+            // label nama juga ikut disembunyikan
+            document.getElementById('labels-container').style.display = hudVisible ? '' : 'none';
+            document.querySelector('#btn-hud-toggle span').textContent = hudVisible ? '👁️' : '🚫';
+            showToast(hudVisible ? '👁️' : '🚫', hudVisible ? 'HUD ditampilkan.' : 'HUD disembunyikan. Pemandangan lega! 🏝️');
+        });
+
+        // Lipat/buka panel skill & chat agar pandangan lega
+        document.getElementById('btn-stats-toggle').addEventListener('click', () => {
+            const d = document.getElementById('player-detail');
+            d.classList.toggle('hidden');
+            document.getElementById('btn-stats-toggle').textContent = d.classList.contains('hidden') ? '📊' : '▾';
+        });
+        document.getElementById('btn-chat-toggle').addEventListener('click', () => {
+            const b = document.getElementById('chat-body');
+            b.classList.toggle('hidden');
+            document.getElementById('btn-chat-toggle').textContent = b.classList.contains('hidden') ? '▸' : '▾';
+        });
+
+        document.getElementById('btn-hint-close').addEventListener('click', () => {
+            document.getElementById('hint-bar').style.display = 'none';
+        });
+
+        document.getElementById('btn-dance').addEventListener('click', () => {
+            if (isInsideTent) return;
+            if (currentActivity === 'dancing') {
+                stopDancing();
+                showToast('🕺', 'Berhenti berjoget.');
+            } else if (!currentActivity) {
+                setActivity('dancing');
+                startDanceMusic();
+                showCharacterBubble(playerLabel, 'Asyik joget bareng! 💃🎶');
+                showToast('🎵', 'Mode joget: lampu disko + NPC ikutan!');
+            }
+        });
+
+        // MEKANIK TARIK PANCING (Bisa Dapat Ikan atau Lepas!)
+        function startFishingMinigame() {
+            setActivity('fishing_minigame');
+            fishingGame.active = true;
+            fishingGame.cursorPos = 5;
+            fishingGame.cursorDir = 1;
+            // Semakin tinggi level fishing, zona hijau semakin lebar
+            const bonusWidth = Math.min(18, (playerState.skills.fishing.level - 1) * 4);
+            fishingGame.targetWidth = 24 + bonusWidth + (playerState.upgrades.rod ? 8 : 0);
+            fishingGame.targetStart = 20 + Math.random() * (65 - fishingGame.targetWidth);
+            fishingGame.speed = (1.35 + Math.random() * 0.45) * (fishingGame.gold ? 1.35 : 1);
+
+            const targetZoneEl = document.getElementById('fish-target-zone');
+            targetZoneEl.style.left = `${fishingGame.targetStart}%`;
+            targetZoneEl.style.width = `${fishingGame.targetWidth}%`;
+
+            document.getElementById('fishing-minigame').classList.remove('hidden');
+            playSFX('splash');
+            showCharacterBubble(playerLabel, '❗ Ada yang nyangkut! Tarik sekarang!');
+        }
+
+        function resolveFishingPull() {
+            if (!fishingGame.active) return;
+            fishingGame.active = false;
+            document.getElementById('fishing-minigame').classList.add('hidden');
+
+            const hitSuccess =
+                fishingGame.cursorPos >= fishingGame.targetStart &&
+                fishingGame.cursorPos <= (fishingGame.targetStart + fishingGame.targetWidth);
+
+            // Sembunyikan joran & kail
+            playerMesh.userData.rod.visible = false;
+            playerMesh.userData.rightArmPivot.rotation.set(0, 0, 0);
+            bobberMesh.visible = false;
+            fishingLine.visible = false;
+            clearActivity();
+
+            const isGold = !!fishingGame.gold;
+            fishingGame.gold = false;
+            if (hitSuccess) {
+                playSFX('success');
+                // Luncurkan objek Ikan 3D secara parabolik dari air menuju pemain!
+                const fishMesh = new THREE.Group();
+                const fishBody = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.22, 0.65, 8),
+                    new THREE.MeshLambertMaterial({ color: isGold ? 0xfbbf24 : 0x38bdf8, flatShading: true })
+                );
+                fishBody.rotation.z = Math.PI / 2;
+                fishMesh.add(fishBody);
+
+                const startWater = new THREE.Vector3(0, -0.2, 29.5);
+                const velToPlayer = new THREE.Vector3(
+                    (playerMesh.position.x - 0) * 0.04,
+                    0.34,
+                    (playerMesh.position.z - 29.5) * 0.04
+                );
+
+                const goldBonus = isGold ? 3 : 1;
+                spawnPhysicsItem(fishMesh, startWater, velToPlayer, () => {
+                    playerState.inventory.fish += goldBonus;
+                    addSkillXP('fishing', isGold ? 60 : 35);
+                    bumpMission('fish2', 1);
+                    if (isGold) {
+                        showCharacterBubble(playerLabel, '🌟 IKAN EMAS! Luar biasa!');
+                        showToast('🌟', 'Ikan Emas! +' + goldBonus + ' Ikan & +60 XP Mancing!');
+                    } else {
+                        showCharacterBubble(playerLabel, 'Strike! Dapat Ikan Segar! 🐟✨');
+                        showToast('🐟', 'Berhasil! +1 Ikan Segar & +35 XP Mancing!');
+                    }
+                });
+            } else {
+                playSFX('fail');
+                // Hanya sedikit XP latihan saat ikan lepas
+                addSkillXP('fishing', 5);
+                const failReasons = [
+                    'Yah! Ikannya lepas karena tarikan kurang pas! 🌊',
+                    'Tali kail kendor, ikannya kabur! Coba lagi! 🐟💨',
+                    'Dapat sepatu bot bekas lalu jatuh lagi ke laut 😅'
+                ];
+                const msg = failReasons[Math.floor(Math.random() * failReasons.length)];
+                showCharacterBubble(playerLabel, msg);
+                showToast('💨', 'Gagal menangkap ikan! Tepatkan di zona hijau saat menyentak.');
+            }
+        }
+
+        document.getElementById('btn-pull-rod').addEventListener('click', resolveFishingPull);
+
+        // EKSEKUSI INTERAKSI OBJEK PULAU (Mancing, Panjat Pohon dengan Animasi Tangan, Masak, Masuk Kemah)
+        function triggerInteraction() {
+            if (!activeTarget || (currentActivity && currentActivity !== 'dancing')) return;
+
+            if (activeTarget.type === 'tent') {
+                toggleEnterTent();
+                return;
+            }
+
+            if (activeTarget.type === 'fishing') {
+                if (!useEnergy(8)) return;
+                fishingGame.gold = false;
+                setActivity('fishing_wait');
+                playerMesh.lookAt(0, playerMesh.position.y, 32);
+                playerMesh.userData.rod.visible = true;
+                playerMesh.userData.rightArmPivot.rotation.x = -Math.PI / 3;
+
+                // Tampilkan pelampung kail di air
+                bobberMesh.position.set(0, -0.15, 29.5);
+                bobberMesh.visible = true;
+                fishingLine.visible = true;
+
+                playSFX('splash');
+                showCharacterBubble(playerLabel, '🎣 Melempar kail... menunggu ikan menggigit...');
+                showToast('🎣', 'Tunggu sampai kail bergoyang lalu tarik di zona hijau!');
+
+                // Waktu tunggu acak 1.5 - 2.8 detik (hujan: 40% lebih cepat)
+                const waitMs = (1500 + Math.random() * 1300) * (WORLD.weather === 'hujan' ? 0.6 : 1);
+                fishingGame.waitTimer = setTimeout(() => {
+                    if (currentActivity === 'fishing_wait') {
+                        startFishingMinigame();
+                    } else {
+                        // AUDIT: aktivitas diganti saat menunggu — bersihkan joran & kail
+                        playerMesh.userData.rod.visible = false;
+                        playerMesh.userData.rightArmPivot.rotation.set(0, 0, 0);
+                        bobberMesh.visible = false;
+                        fishingLine.visible = false;
+                    }
+                }, waitMs);
+            }
+
+            else if (activeTarget.type === 'tree') {
+                if (!useEnergy(10)) return;
+                setActivity('climbing');
+                const tree = activeTarget;
+
+                // Posisikan karakter menempel di batang pohon menghadap ke batang
+                const angleToTree = Math.atan2(tree.position.x - playerMesh.position.x, tree.position.z - playerMesh.position.z);
+                playerMesh.position.x = tree.position.x - Math.sin(angleToTree) * 0.62;
+                playerMesh.position.z = tree.position.z - Math.cos(angleToTree) * 0.62;
+                playerMesh.rotation.y = angleToTree;
+
+                showCharacterBubble(playerLabel, '🌴 Memanjat batang pohon...');
+                const startY = 1.0;
+                const peakY = (tree.topY || 5.2) - 0.3;
+                let phase = 'up'; // 'up' -> 'reach' -> 'down'
+                let progress = 0;
+                let reachTimer = 0;
+
+                const climbInterval = setInterval(() => {
+                    if (currentActivity !== 'climbing') { // AUDIT: batal & kembalikan ke tanah
+                        clearInterval(climbInterval);
+                        playerMesh.position.y = 1.0;
+                        playerMesh.userData.leftArmPivot.rotation.set(0, 0, 0);
+                        playerMesh.userData.rightArmPivot.rotation.set(0, 0, 0);
+                        playerMesh.userData.heldCoconut.visible = false;
+                        return;
+                    }
+                    if (phase === 'up') {
+                        progress += 0.035 * (WORLD.weather === 'angin' ? 0.7 : 1);
+                        playerMesh.position.y = startY + (peakY - startY) * progress;
+                        // Gerakan tangan kiri & kanan bergantian memeluk/memanjat batang pohon dengan jelas
+                        const step = progress * 25;
+                        playerMesh.userData.leftArmPivot.rotation.x = -Math.PI * 0.65 + Math.sin(step) * 0.55;
+                        playerMesh.userData.rightArmPivot.rotation.x = -Math.PI * 0.65 - Math.sin(step) * 0.55;
+                        playerMesh.userData.leftArmPivot.rotation.z = -0.25;
+                        playerMesh.userData.rightArmPivot.rotation.z = 0.25;
+
+                        if (progress >= 1) {
+                            phase = 'reach';
+                            showCharacterBubble(playerLabel, '✋ Meraih & memetik buah kelapa...');
+                        }
+                    } else if (phase === 'reach') {
+                        reachTimer += 0.08;
+                        // Tangan kiri berpegangan pada batang, Tangan kanan terulur ke atas memetik kelapa!
+                        playerMesh.userData.leftArmPivot.rotation.set(-Math.PI * 0.55, 0, -0.35);
+                        playerMesh.userData.rightArmPivot.rotation.x = -Math.PI * 0.95 - Math.sin(reachTimer * Math.PI) * 0.25;
+                        playerMesh.userData.rightArmPivot.rotation.z = 0.1;
+
+                        // Di tengah jangkauan, kelapa terpetik ke tangan kanan & satu kelapa jatuh memantul ke tanah!
+                        if (reachTimer >= 0.48 && !playerMesh.userData.heldCoconut.visible) {
+                            playerMesh.userData.heldCoconut.visible = true;
+                            playSFX('pluck');
+
+                            // Sembunyikan 1 kelapa di pohon sementara dan jatuhkan kelapa fisika ke pasir
+                            if (tree.coconuts && tree.coconuts[0]) {
+                                tree.coconuts[0].visible = false;
+                                setTimeout(() => { tree.coconuts[0].visible = true; }, 6000);
+                            }
+
+                            const dropCoco = new THREE.Mesh(
+                                new THREE.SphereGeometry(0.24, 10, 10),
+                                new THREE.MeshLambertMaterial({ color: 0x451a03 })
+                            );
+                            const topPos = new THREE.Vector3(tree.position.x + 0.4, peakY + 0.8, tree.position.z);
+                            const dropVel = new THREE.Vector3((Math.random() - 0.5) * 0.12, 0.12, (Math.random() - 0.5) * 0.12);
+                            spawnPhysicsItem(dropCoco, topPos, dropVel);
+                        }
+
+                        if (reachTimer >= 1.0) {
+                            phase = 'down';
+                            progress = 1.0;
+                        }
+                    } else if (phase === 'down') {
+                        progress -= 0.045;
+                        playerMesh.position.y = startY + (peakY - startY) * Math.max(0, progress);
+                        const step = progress * 22;
+                        playerMesh.userData.leftArmPivot.rotation.x = -Math.PI * 0.6 + Math.sin(step) * 0.4;
+                        // Tangan kanan tetap membawa kelapa turun
+                        playerMesh.userData.rightArmPivot.rotation.x = -Math.PI * 0.45;
+
+                        if (progress <= 0) {
+                            clearInterval(climbInterval);
+                            playerMesh.position.y = startY;
+                            // Mundurkan sedikit posisi karakter dari batang pohon agar tidak terjebak di dalam radius collider pohon
+                            playerMesh.position.x = tree.position.x - Math.sin(angleToTree) * 1.25;
+                            playerMesh.position.z = tree.position.z - Math.cos(angleToTree) * 1.25;
+                            playerMesh.userData.leftArmPivot.rotation.set(0, 0, 0);
+                            playerMesh.userData.rightArmPivot.rotation.set(0, 0, 0);
+                            playerMesh.userData.heldCoconut.visible = false;
+                            clearActivity();
+
+                            playerState.inventory.coconut += 1;
+                            playerState.inventory.wood += 1;
+                            addSkillXP('foraging', 35);
+                            bumpMission('coco3', 1);
+                            playSFX('success');
+                            showCharacterBubble(playerLabel, 'Berhasil memetik Kelapa & Kayu! 🥥🪵');
+                            showToast('🥥', '+1 Kelapa, +1 Kayu Bakar & +35 XP Panjat!');
+                        }
+                    }
+                }, 40);
+            }
+
+            else if (activeTarget.type === 'cave') {
+                if (!useEnergy(5)) return;
+                setActivity('traveling');
+                showCharacterBubble(playerLabel, '⛏️ Memasuki tambang...');
+                playSFX('splash');
+                fadeTeleport(MINE.x, MINE.z + 6, 'Selamat datang di Tambang Kristal! ⛏️', function () {
+                    clearActivity();
+                });
+            }
+
+            else if (activeTarget.type === 'mine_exit') {
+                setActivity('traveling');
+                fadeTeleport(14, -2.2, 'Kembali ke pulau 🏝️', function () {
+                    clearActivity();
+                });
+            }
+
+            else if (activeTarget.type === 'rock') {
+                const rock = activeTarget.rock;
+                if (!rock || !rock.alive) return;
+                if (!useEnergy(8)) return;
+                setActivity('mining');
+                playerMesh.lookAt(rock.mesh.position.x, playerMesh.position.y, rock.mesh.position.z);
+                let hits = 0;
+                showCharacterBubble(playerLabel, '⛏️ Menambang...');
+                const mineAnim = setInterval(function () {
+                    if (currentActivity !== 'mining') { clearInterval(mineAnim); return; } // AUDIT: batal
+                    hits++;
+                    playerMesh.userData.rightArmPivot.rotation.x = -Math.PI * 0.9;
+                    setTimeout(function () {
+                        if (currentActivity === 'mining') playerMesh.userData.rightArmPivot.rotation.x = 0;
+                    }, 200);
+                    playSFX('hit');
+                    rock.mesh.rotation.y += 0.35;
+                    rock.mesh.scale.setScalar(Math.max(0.45, 1 - hits * 0.18));
+                    if (hits >= 3) {
+                        clearInterval(mineAnim);
+                        rock.alive = false;
+                        rock.mesh.visible = false;
+                        const gotCrystal = Math.random() < 0.3;
+                        if (gotCrystal) {
+                            playerState.inventory.crystal += 1;
+                            showToast('💎', '+1 Kristal Pulau!');
+                            showCharacterBubble(playerLabel, '💎 Kristal! Beruntung!');
+                        } else {
+                            playerState.inventory.stone += 1;
+                            showToast('🪨', '+1 Batu Tambang!');
+                            showCharacterBubble(playerLabel, '🪨 Dapat batu tambang!');
+                        }
+                        addSkillXP('foraging', 30);
+                        playSFX('success');
+                        clearActivity();
+                        updateHUD();
+                        saveGame(true);
+                        setTimeout(function () {
+                            rock.alive = true;
+                            rock.mesh.visible = true;
+                            rock.mesh.scale.setScalar(1);
+                        }, 30000);
+                    }
+                }, 600);
+            }
+
+            else if (activeTarget.type === 'crab') {
+                const crab = activeTarget.crab;
+                if (!crab || crab.caught || !crab.mesh.visible) return;
+                if (!useEnergy(5)) return;
+                if (Math.random() < 0.65) {
+                    crab.caught = true;
+                    crab.mesh.visible = false;
+                    playerState.inventory.crab += 1;
+                    addSkillXP('foraging', 25);
+                    playSFX('success');
+                    showCharacterBubble(playerLabel, '🦀 Dapat kepiting!');
+                    showToast('🦀', '+1 Kepiting & +25 XP Panjat!');
+                    setTimeout(function () { spawnCrab(crab); }, 20000);
+                } else {
+                    playSFX('fail');
+                    showCharacterBubble(playerLabel, '💨 Kepitingnya kabur!');
+                    showToast('🦀', 'Wah, kepitingnya lolos...');
+                    const m = crab.mesh;
+                    crab.tx = m.position.x + (m.position.x - playerMesh.position.x);
+                    crab.tz = m.position.z + (m.position.z - playerMesh.position.z);
+                }
+                updateHUD();
+                saveGame(true);
+            }
+
+            else if (activeTarget.type === 'fishing_gold') {
+                if (!useEnergy(8)) return;
+                fishingGame.gold = true;
+                setActivity('fishing_wait');
+                playerMesh.lookAt(-10, playerMesh.position.y, 32);
+                playerMesh.userData.rod.visible = true;
+                playerMesh.userData.rightArmPivot.rotation.x = -Math.PI / 3;
+                bobberMesh.position.set(-10, -0.15, 29.5);
+                bobberMesh.visible = true;
+                fishingLine.visible = true;
+                playSFX('splash');
+                showCharacterBubble(playerLabel, '🌟 Spot ikan emas... semoga beruntung!');
+                showToast('🌟', 'Tunggu ikan emas menyambar!');
+                const waitMs = (1500 + Math.random() * 1300) * (WORLD.weather === 'hujan' ? 0.6 : 1);
+                fishingGame.waitTimer = setTimeout(function () {
+                    if (currentActivity === 'fishing_wait') startFishingMinigame();
+                }, waitMs);
+            }
+
+            else if (activeTarget.type === 'campfire') {
+                renderRecipes();
+                openModal('recipe-modal');
+                showCharacterBubble(playerLabel, 'Mau masak apa hari ini? 🍳');
+            }
+        }
+
+        document.getElementById('btn-interact').addEventListener('click', triggerInteraction);
+
+        /********************************************************************
+         * 7. FITUR CHAT TEKS & VOICE CHAT (Live Mic + Speech-to-Bubble + Voice Note)
+         ********************************************************************/
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const chatMessages = document.getElementById('chat-messages');
+
+        function appendChatMessage(sender, htmlContent, colorClass = 'text-emerald-400') {
+            const div = document.createElement('div');
+            div.className = 'text-slate-200 leading-snug';
+            div.innerHTML = `<b class="${colorClass}">${sender}:</b> ${htmlContent}`;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            appendChatMessage(playerState.username, text.replace(/</g, '&lt;'));
+            showCharacterBubble(playerLabel, text);
+            mpSendChat(text);
+            chatInput.value = '';
+            chatInput.blur();
+        });
+
+        // 7.1 LIVE VOICE CHAT (Web Audio API Analyzer + Web Speech Recognition untuk Balon Suara Otomatis)
+        let micStream = null;
+        let audioCtx = null;
+        let analyser = null;
+        let micDataArray = null;
+        let isMicOpen = false;
+        let recognition = null;
+
+        const btnMicToggle = document.getElementById('btn-mic-toggle');
+        const voiceBadge = document.getElementById('voice-status-badge');
+        const micMeterContainer = document.getElementById('mic-meter-container');
+        const micVolumeBar = document.getElementById('mic-volume-bar');
+        const sttPreview = document.getElementById('stt-preview');
+
+        async function toggleLiveMic() {
+            if (!isMicOpen) {
+                try {
+                    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioCtx.createMediaStreamSource(micStream);
+                    analyser = audioCtx.createAnalyser();
+                    analyser.fftSize = 256;
+                    source.connect(analyser);
+                    micDataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                    isMicOpen = true;
+                    btnMicToggle.className = 'bg-rose-500 hover:bg-rose-400 text-white border border-rose-300 p-1.5 rounded-xl text-sm transition flex items-center justify-center shrink-0 animate-pulse';
+                    voiceBadge.classList.remove('hidden');
+                    voiceBadge.classList.add('flex');
+                    micMeterContainer.classList.remove('hidden');
+                    micMeterContainer.classList.add('flex');
+
+                    // Aktifkan SpeechRecognition jika browser mendukung agar omongan muncul jadi balon chat otomatis
+                    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    if (SpeechRec) {
+                        recognition = new SpeechRec();
+                        recognition.lang = 'id-ID';
+                        recognition.continuous = true;
+                        recognition.interimResults = true;
+                        recognition.onresult = (event) => {
+                            let interim = '';
+                            for (let i = event.resultIndex; i < event.results.length; i++) {
+                                const transcript = event.results[i][0].transcript.trim();
+                                if (event.results[i].isFinal && transcript) {
+                                    showCharacterBubble(playerLabel, `🎙️ "${transcript}"`);
+                                    appendChatMessage(playerState.username, `<span class="italic text-emerald-300">🎙️ "${transcript}"</span>`);
+                                } else {
+                                    interim += transcript;
+                                }
+                            }
+                            if (interim) sttPreview.textContent = interim;
+                        };
+                        recognition.onerror = () => {};
+                        recognition.onend = () => {
+                            if (isMicOpen) {
+                                try { recognition.start(); } catch (e) {}
+                            }
+                        };
+                        try { recognition.start(); } catch (e) {}
+                    }
+
+                    showToast('🎙️', 'Live Voice Chat Aktif! Silakan berbicara.');
+                } catch (err) {
+                    showToast('⚠️', 'Izin mikrofon diperlukan untuk fitur Live Voice Chat.');
+                }
+            } else {
+                isMicOpen = false;
+                if (micStream) micStream.getTracks().forEach(t => t.stop());
+                if (recognition) {
+                    try { recognition.stop(); } catch (e) {}
+                }
+                playerLabel.voiceIcon.classList.add('hidden');
+                btnMicToggle.className = 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 p-1.5 rounded-xl text-sm transition flex items-center justify-center shrink-0';
+                voiceBadge.classList.add('hidden');
+                voiceBadge.classList.remove('flex');
+                micMeterContainer.classList.add('hidden');
+                micMeterContainer.classList.remove('flex');
+                showToast('🔇', 'Mikrofon dimatikan.');
+            }
+        }
+
+        btnMicToggle.addEventListener('click', toggleLiveMic);
+
+        // 7.2 REKAM PESAN SUARA (VOICE NOTE) DI RUANG OBROLAN
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecordingVN = false;
+        const btnVoiceNote = document.getElementById('btn-voice-note');
+
+        btnVoiceNote.addEventListener('click', async () => {
+            if (!isRecordingVN) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) audioChunks.push(e.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        stream.getTracks().forEach(t => t.stop());
+
+                        // Tampilkan tombol putar Voice Note di chat
+                        const vnId = 'vn-' + Date.now();
+                        appendChatMessage(
+                            playerState.username,
+                            `<button onclick="document.getElementById('${vnId}').play()" class="inline-flex items-center gap-1 bg-emerald-500/20 hover:bg-emerald-500/40 border border-emerald-400/50 text-emerald-300 px-2 py-0.5 rounded-lg text-[11px] font-bold">▶️ Putar Pesan Suara</button><audio id="${vnId}" src="${audioUrl}" class="hidden"></audio>`
+                        );
+                        showCharacterBubble(playerLabel, '🎤 Mengirim pesan suara!');
+                        showToast('🎤', 'Pesan suara terkirim ke obrolan pulau!');
+                    };
+
+                    mediaRecorder.start();
+                    isRecordingVN = true;
+                    btnVoiceNote.textContent = '⏹️';
+                    btnVoiceNote.className = 'bg-amber-500 hover:bg-amber-400 text-slate-950 border border-amber-300 p-1.5 rounded-xl text-sm transition flex items-center justify-center shrink-0 animate-pulse';
+                    showToast('⏺️', 'Merekam pesan suara... Klik tombol ⏹️ lagi untuk mengirim.');
+                } catch (err) {
+                    showToast('⚠️', 'Tidak dapat mengakses mikrofon untuk pesan suara.');
+                }
+            } else {
+                isRecordingVN = false;
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+                btnVoiceNote.textContent = '⏺️';
+                btnVoiceNote.className = 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 p-1.5 rounded-xl text-sm transition flex items-center justify-center shrink-0';
+            }
+        });
+
+        // Modal GitHub Save JSON
+        const githubModal = document.getElementById('github-modal');
+        const jsonPreview = document.getElementById('github-json-preview');
+
+        document.getElementById('btn-mission-modal').addEventListener('click', () => {
+            renderMissions();
+            openModal('mission-modal');
+        });
+        document.getElementById('btn-shop-modal').addEventListener('click', () => {
+            renderShop();
+            openModal('shop-modal');
+        });
+        document.getElementById('btn-eat-dish').addEventListener('click', eatDish);
+        document.getElementById('btn-mp-modal').addEventListener('click', () => {
+            if (typeof Peer === 'undefined') { mpToast('Multiplayer butuh internet 🌐'); return; }
+            document.getElementById('mp-name').value = MP.name;
+            openModal('mp-modal');
+        });
+        document.getElementById('btn-mp-create').addEventListener('click', mpCreateRoom);
+        document.getElementById('btn-mp-join').addEventListener('click', mpJoinRoom);
+        document.getElementById('btn-mp-leave').addEventListener('click', () => mpLeave(false));
+        document.querySelectorAll('.mp-emote').forEach(function (b) {
+            b.addEventListener('click', function () { mpEmote(b.getAttribute('data-emote')); });
+        });
+        document.querySelectorAll('[data-close-modal]').forEach(function (b) {
+            b.addEventListener('click', function () { closeModal(b.getAttribute('data-close-modal')); });
+        });
+
+        document.getElementById('btn-github-modal').addEventListener('click', () => {
+            saveGame(true);
+            playerState.lastSaved = new Date().toISOString();
+            jsonPreview.textContent = JSON.stringify(playerState, null, 2);
+            githubModal.classList.remove('hidden');
+        });
+
+        document.getElementById('btn-close-modal').addEventListener('click', () => {
+            githubModal.classList.add('hidden');
+        });
+
+        document.getElementById('btn-copy-json').addEventListener('click', () => {
+            const temp = document.createElement('textarea');
+            temp.value = jsonPreview.textContent;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            showToast('📋', 'JSON berhasil disalin ke clipboard!');
+        });
+
+        document.getElementById('btn-simulate-commit').addEventListener('click', () => {
+            githubModal.classList.add('hidden');
+            showToast('🐙', 'Berhasil! Data skill & inventory siap di-commit ke GitHub API.');
+            showCharacterBubble(playerLabel, 'Progres pulau sudah di-save! 💾');
+        });
+
+        /********************************************************************
+         * 8. GAME LOOP UTAMA (Fisika Gravitasi, Ayunan Tangan, Mancing & Voice)
+         ********************************************************************/
+        const clock = new THREE.Clock();
+        const actionPromptEl = document.getElementById('action-prompt');
+        const actionIconEl = document.getElementById('action-icon');
+        const actionTextEl = document.getElementById('action-text');
+        const fishCursorEl = document.getElementById('fish-cursor');
+
+        function updateLabelPosition(mesh, uiObj, heightOffset = 2.35) {
+            const pos = mesh.position.clone();
+            pos.y += heightOffset;
+            pos.project(camera);
+
+            if (pos.z > 1) {
+                uiObj.wrapper.style.display = 'none';
+                return;
+            }
+            uiObj.wrapper.style.display = 'flex';
+            // Label memudar saat jauh agar tidak menutupi pemandangan
+            const dist = mesh.position.distanceTo(camera.position);
+            uiObj.wrapper.style.opacity = dist > 30 ? '0' : dist > 17 ? (1 - (dist - 17) / 13 * 0.8).toFixed(2) : '1';
+            const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-(pos.y * 0.5) + 0.5) * window.innerHeight;
+            uiObj.wrapper.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px)`;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsed = clock.getElapsedTime();
+            const dt = Math.min(0.1, Math.max(0, elapsed - prevElapsed));
+            prevElapsed = elapsed;
+
+            // TAHAP 4: siklus siang/malam + cuaca
+            updateDayNight(dt);
+            WORLD.weatherTimer -= dt;
+            if (WORLD.weatherTimer <= 0) rollWeather();
+            // animasi hujan
+            if (rain.visible) {
+                const pos = rainGeo.attributes.position.array;
+                for (let i = 0; i < RAIN_N; i++) {
+                    pos[i * 3 + 1] -= 26 * dt;
+                    if (pos[i * 3 + 1] < 0) {
+                        pos[i * 3 + 1] = 22;
+                        pos[i * 3] = playerMesh.position.x + (Math.random() - 0.5) * 44;
+                        pos[i * 3 + 2] = playerMesh.position.z + (Math.random() - 0.5) * 44;
+                    }
+                }
+                rainGeo.attributes.position.needsUpdate = true;
+            }
+            // kepiting
+            updateCrabs(dt);
+            // HUD jam
+            const hh = Math.floor(WORLD.time), mm = Math.floor((WORLD.time - hh) * 60);
+            const timeEl = document.getElementById('hud-time');
+            if (timeEl) {
+                timeEl.textContent = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+                document.getElementById('hud-daynight').textContent = worldIsNight() ? '🌙' : '☀️';
+            }
+
+            // Skill Kemah: istirahat di dalam tenda memberi +10 XP tiap 5 detik
+            if (isInsideTent && elapsed - lastTentXPTick >= 5) {
+                lastTentXPTick = elapsed;
+                addSkillXP('camping', 10);
+                playerState.energy = Math.min(100, playerState.energy + 4);
+                bumpMission('rest30', 5);
+                updateHUD();
+            }
+
+            // Autosave tiap 30 detik
+            if (elapsed - lastAutoSave >= 30) {
+                lastAutoSave = elapsed;
+                saveGame(true);
+            }
+
+            // 1. Update Indikator Volume Suara Mic Jika Aktif
+            if (isMicOpen && analyser && micDataArray) {
+                analyser.getByteFrequencyData(micDataArray);
+                let sum = 0;
+                for (let i = 0; i < micDataArray.length; i++) sum += micDataArray[i];
+                const avg = sum / micDataArray.length;
+                const pct = Math.min(100, Math.round((avg / 90) * 100));
+                micVolumeBar.style.width = `${pct}%`;
+
+                if (pct > 15) {
+                    playerLabel.voiceIcon.classList.remove('hidden');
+                } else {
+                    playerLabel.voiceIcon.classList.add('hidden');
+                }
+            }
+
+            // 2. Update Kursor Minigame Mancing
+            if (fishingGame.active) {
+                fishingGame.cursorPos += fishingGame.speed * fishingGame.cursorDir;
+                if (fishingGame.cursorPos >= 96) {
+                    fishingGame.cursorPos = 96;
+                    fishingGame.cursorDir = -1;
+                } else if (fishingGame.cursorPos <= 2) {
+                    fishingGame.cursorPos = 2;
+                    fishingGame.cursorDir = 1;
+                }
+                fishCursorEl.style.left = `${fishingGame.cursorPos}%`;
+                // Pelampung kail berguncang kuat saat ikan menggigit
+                bobberMesh.position.y = -0.2 + Math.sin(elapsed * 35) * 0.18;
+            } else if (currentActivity === 'fishing_wait') {
+                bobberMesh.position.y = -0.15 + Math.sin(elapsed * 4) * 0.05;
+            }
+
+            // Update garis tali pancing dari ujung joran ke pelampung
+            if (fishingLine.visible) {
+                const rodTip = new THREE.Vector3(0.55, 2.1, 2.3).applyMatrix4(playerMesh.matrixWorld);
+                fishingLine.geometry.setFromPoints([rodTip, bobberMesh.position]);
+            }
+
+            // 3. Simulasi Objek Fisika (Kelapa jatuh memantul & Ikan lompat dari air)
+            for (let i = physicsObjects.length - 1; i >= 0; i--) {
+                const obj = physicsObjects[i];
+                obj.vel.y += obj.gravity;
+                obj.mesh.position.add(obj.vel);
+                obj.mesh.rotation.x += 0.1;
+                obj.mesh.rotation.z += 0.08;
+                obj.age += 1;
+
+                // Pantulan tanah pulau (y = 1.15)
+                if (obj.mesh.position.y <= 1.15 && obj.vel.y < 0) {
+                    obj.mesh.position.y = 1.15;
+                    obj.vel.y = -obj.vel.y * 0.45;
+                    obj.vel.x *= 0.65;
+                    obj.vel.z *= 0.65;
+                    obj.bounces += 1;
+                }
+
+                if (obj.bounces > obj.maxBounces || obj.age > 95) {
+                    scene.remove(obj.mesh);
+                    if (obj.onFinish) obj.onFinish();
+                    physicsObjects.splice(i, 1);
+                }
+            }
+
+            // 4. Pergerakan Karakter, Ayunan Tangan & Fisika Lompatan
+            if (!currentActivity || currentActivity === 'dancing') {
+                let moveForward = 0;
+                let moveSide = 0;
+                if (Input.pressed('up')) moveForward -= 1;
+                if (Input.pressed('down')) moveForward += 1;
+                if (Input.pressed('left')) moveSide -= 1;
+                if (Input.pressed('right')) moveSide += 1;
+
+                if (moveForward !== 0 || moveSide !== 0) {
+                    if (currentActivity === 'dancing') stopDancing();
+
+                    const moveSpeed = 0.14;
+                    const moveAngle = Math.atan2(moveSide, moveForward) + cameraAngle;
+                    const nextX = playerMesh.position.x + Math.sin(moveAngle) * moveSpeed;
+                    const nextZ = playerMesh.position.z + Math.cos(moveAngle) * moveSpeed;
+
+                    // Cek benturan dengan batang pohon (Fisika Collision)
+                    // Izinkan pemain bergerak jika arah gerakannya menjauhi titik pusat pohon (mencegah nyangkut)
+                    let blockedByTree = false;
+                    for (const col of treeColliders) {
+                        const currentDist = Math.hypot(playerMesh.position.x - col.x, playerMesh.position.z - col.z);
+                        const nextDist = Math.hypot(nextX - col.x, nextZ - col.z);
+                        if (nextDist < col.radius + 0.35 && nextDist < currentDist) {
+                            blockedByTree = true;
+                            break;
+                        }
+                    }
+
+                    const distCenter = Math.hypot(nextX, nextZ);
+                    const onDock = Math.abs(nextX) < 1.5 && nextZ >= 18 && nextZ <= 26.5;
+                    const inMine = typeof MINE !== 'undefined' &&
+                        Math.hypot(nextX - MINE.x, nextZ - MINE.z) < MINE.r;
+
+                    if (!blockedByTree && (distCenter < 22.8 || onDock || inMine)) {
+                        playerMesh.position.x = nextX;
+                        playerMesh.position.z = nextZ;
+                    }
+
+                    playerMesh.rotation.y = moveAngle;
+                    // Ayunan tangan kiri & kanan saat berjalan
+                    playerMesh.userData.leftArmPivot.rotation.x = Math.sin(elapsed * 12) * 0.55;
+                    playerMesh.userData.rightArmPivot.rotation.x = -Math.sin(elapsed * 12) * 0.55;
+                } else if (currentActivity === 'dancing') {
+                    const mv = danceMoveIdx % 4;
+                    const b = elapsed * 10;
+                    const LA = playerMesh.userData.leftArmPivot, RA = playerMesh.userData.rightArmPivot;
+                    if (mv === 0) {          // 0: helikopter! putar + tangan ke atas
+                        playerMesh.rotation.y += 0.16;
+                        LA.rotation.set(-Math.PI * 0.9, 0, -0.4 + Math.sin(b) * 0.3);
+                        RA.rotation.set(-Math.PI * 0.9, 0, 0.4 - Math.sin(b) * 0.3);
+                    } else if (mv === 1) {   // 1: goyang kiri-kanan
+                        playerMesh.rotation.z = Math.sin(b * 0.5) * 0.12;
+                        LA.rotation.set(-0.4, 0, -1.1 + Math.sin(b) * 0.4);
+                        RA.rotation.set(-0.4, 0, 1.1 - Math.sin(b) * 0.4);
+                    } else if (mv === 2) {   // 2: lompat + pompa tangan
+                        playerMesh.position.y = 1.0 + Math.abs(Math.sin(b * 0.5)) * 0.35;
+                        LA.rotation.set(-1.2 + Math.sin(b) * 0.5, 0, -0.3);
+                        RA.rotation.set(-1.2 - Math.sin(b) * 0.5, 0, 0.3);
+                    } else {                 // 3: wave tangan bergantian
+                        playerMesh.rotation.y += 0.05;
+                        playerMesh.rotation.z *= 0.9;
+                        const w = Math.sin(b * 0.7);
+                        LA.rotation.set(-1.4, 0, w > 0 ? -0.9 : -0.2);
+                        RA.rotation.set(-1.4, 0, w > 0 ? 0.2 : 0.9);
+                    }
+                } else {
+                    playerMesh.userData.leftArmPivot.rotation.x *= 0.8;
+                    playerMesh.userData.rightArmPivot.rotation.x *= 0.8;
+                }
+
+                // Fisika Vertikal (Lompatan & Gravitasi)
+                if (!playerPhysics.isGrounded || playerPhysics.vy !== 0) {
+                    playerMesh.position.y += playerPhysics.vy;
+                    playerPhysics.vy += playerPhysics.gravity;
+                    if (playerMesh.position.y <= 1.0) {
+                        playerMesh.position.y = 1.0;
+                        playerPhysics.vy = 0;
+                        playerPhysics.isGrounded = true;
+                    }
+                }
+                // AUDIT: jaring pengaman anti-tenggelam — posisi apa pun yang bikin
+                // karakter di bawah tanah langsung dikembalikan (penyebab "karakter hilang").
+                if (playerMesh.position.y < 1.0) playerMesh.position.y = 1.0;
+            }
+
+            // 5. Cek Jarak Pemain dengan Objek Interaktif
+            activeTarget = null;
+            let minDist = Infinity;
+            for (const item of interactables) {
+                const dist = Math.hypot(
+                    playerMesh.position.x - item.position.x,
+                    playerMesh.position.z - item.position.z
+                );
+                if (dist <= item.radius && dist < minDist) {
+                    minDist = dist;
+                    activeTarget = item;
+                }
+            }
+
+            if (activeTarget && (!currentActivity || currentActivity === 'dancing')) {
+                actionPromptEl.classList.remove('hidden');
+                actionIconEl.textContent = activeTarget.icon;
+                actionTextEl.textContent = activeTarget.prompt;
+            } else {
+                actionPromptEl.classList.add('hidden');
+            }
+
+            // 6. Animasi Api Unggun, Laut, Disko & NPC
+            const isDancingNow = currentActivity === 'dancing';
+            discoLights.forEach(function (l, i) {
+                if (isDancingNow) {
+                    const a = elapsed * 2.6 + i * (Math.PI * 2 / 3);
+                    l.position.set(
+                        playerMesh.position.x + Math.cos(a) * 3.4,
+                        playerMesh.position.y + 2.6,
+                        playerMesh.position.z + Math.sin(a) * 3.4
+                    );
+                    l.intensity = (danceStep % 8 < 4) ? 2.6 : 0.5;
+                } else {
+                    l.intensity = 0;
+                }
+            });
+            flameMesh.scale.y = 1 + Math.sin(elapsed * 10) * 0.18;
+            flameMesh.rotation.y += 0.05;
+            fireLight.intensity = 1.6 + Math.sin(elapsed * 14) * 0.3;
+            // Uap panci naik & memudar
+            steamPuffs.forEach((s) => {
+                s.position.y += 0.022;
+                s.position.x += Math.sin(elapsed * 3 + s.userData.phase) * 0.004;
+                const life = (s.position.y - 2.0) / 1.8;
+                s.material.opacity = Math.max(0, 0.38 * (1 - life));
+                const sc = 1 + life * 0.9;
+                s.scale.set(sc, sc, sc);
+                if (s.position.y > 3.8) {
+                    s.position.y = 2.0;
+                    s.position.x = (Math.random() - 0.5) * 0.4;
+                    s.position.z = (Math.random() - 0.5) * 0.4;
+                }
+            });
+            ocean.position.y = -1.2 + Math.sin(elapsed * 1.8) * 0.08;
+
+            npcObjects.forEach((npc, idx) => {
+                npc.mesh.position.y = 1.0 + Math.sin(elapsed * 2.5 + idx) * 0.04;
+                // NPC ikutan joget kalau dekat & pemain sedang joget
+                if (isDancingNow && !worldIsNight() &&
+                    Math.hypot(npc.mesh.position.x - playerMesh.position.x,
+                               npc.mesh.position.z - playerMesh.position.z) < 14) {
+                    npc.mesh.rotation.y += 0.09;
+                    npc.mesh.userData.leftArmPivot.rotation.z = -0.9 + Math.sin(elapsed * 10 + idx * 2) * 0.4;
+                    npc.mesh.userData.rightArmPivot.rotation.z = 0.9 - Math.sin(elapsed * 10 + idx * 2) * 0.4;
+                }
+                updateLabelPosition(npc.mesh, npc.ui);
+            });
+
+            // 7. Update Kamera Mengikuti Pemain (Lebih dekat saat berada di dalam kemah)
+            const camDist = isInsideTent ? 6.2 : 11.5;
+            const targetCamX = playerMesh.position.x + Math.sin(cameraAngle) * camDist * Math.cos(cameraPitch);
+            const targetCamZ = playerMesh.position.z + Math.cos(cameraAngle) * camDist * Math.cos(cameraPitch);
+            const targetCamY = playerMesh.position.y + camDist * Math.sin(cameraPitch) + 1.5;
+
+            camera.position.lerp(new THREE.Vector3(targetCamX, targetCamY, targetCamZ), 0.12);
+            camera.lookAt(playerMesh.position.x, playerMesh.position.y + 1.2, playerMesh.position.z);
+
+            // TAHAP 3: sinkron multiplayer
+            if (MP.connected && elapsed - MP.lastSend >= 0.1) {
+                MP.lastSend = elapsed;
+                mpSendPos();
+            }
+            if (MP.isHost) mpPrune();
+            if (MP.connected && elapsed - (MP.lastRoomRender || 0) >= 2 &&
+                !document.getElementById('mp-modal').classList.contains('hidden')) {
+                MP.lastRoomRender = elapsed;
+                mpRenderRoom();
+            }
+            Object.keys(MP.view).forEach(function (pid) {
+                const v = MP.view[pid];
+                v.mesh.position.x += (v.tx - v.mesh.position.x) * 0.25;
+                v.mesh.position.z += (v.tz - v.mesh.position.z) * 0.25;
+                let dr = v.try_ - v.mesh.rotation.y;
+                while (dr > Math.PI) dr -= Math.PI * 2;
+                while (dr < -Math.PI) dr += Math.PI * 2;
+                v.mesh.rotation.y += dr * 0.2;
+                updateLabelPosition(v.mesh, v.ui);
+            });
+
+            updateLabelPosition(playerMesh, playerLabel);
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = function () {
+            const restored = loadGame();
+            updateHUD();
+            animate();
+            if (restored) showToast('💾', 'Progres terakhir berhasil dimuat!');
+        };
+        window.addEventListener('beforeunload', () => saveGame(true));
+    </script>
+</body>
+</html>

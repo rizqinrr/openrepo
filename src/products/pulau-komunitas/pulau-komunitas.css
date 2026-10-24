@@ -1,0 +1,49 @@
+.pulau-komunitas-page {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.pulau-komunitas-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.pulau-komunitas-back {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 100;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #f8fafc;
+  font: 700 13px 'Plus Jakarta Sans', system-ui, sans-serif;
+  text-decoration: none;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pulau-komunitas-back:hover,
+.pulau-komunitas-back:focus-visible {
+  background: #10b981;
+  color: #022c22;
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px -4px rgba(16, 185, 129, 0.35);
+}
+
+.pulau-komunitas-back .material-symbols-outlined {
+  font-size: 18px;
+}

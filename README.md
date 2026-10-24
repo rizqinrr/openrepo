@@ -8,6 +8,8 @@ OpenRepo adalah katalog open-source berisi tools browser, game, eksperimen inter
 
 - **CV Creator** — membuat dan mengekspor CV langsung dari browser.
 - **Dev Tools** — rangkaian tool developer: JSON, Regex, Timestamp, Encode, Case, Password, Diff, dan Color Palette.
+- **CSS Playground** — editor visual interaktif properti CSS (transform 2D/3D, shadow, border, filter, gradient, typography).
+- **Pulau Komunitas 3D** — simulasi pulau 3D santai dengan aktivitas mancing, masak, panjat pohon kelapa, kemah, dan multiplayer.
 - **Typing Survival** — game mengetik dengan wave, nyawa, combo, dan best score lokal.
 - **Refresh Man: Urban Rush** — endless arcade game karya [@Dermawanpurba](https://github.com/Dermawanpurba).
 - **Profile experiments** — beberapa eksperimen visual seperti Arcade, Terminal, Swiss Editorial, dan Airbnb Experience.
